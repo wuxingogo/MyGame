@@ -1,0 +1,31 @@
+
+function start()
+	local c = CS.UnityEngine.Vector3.down
+	self.transform.position = c;
+	print("onstart")
+end
+
+function update()
+--	local c = CS.UnityEngine
+--	self.transform.rotation = 
+--	print("update");
+end
+
+function ondrawgizmos()
+	print("ondraw gizmos");
+
+	local c = CS.UnityEngine.Color.green;
+	-- print(c.r,c.g,c.b);
+	-- local defaultMatrix = CS.UnityEngine.Gizmos.matrix;
+	-- CS.UnityEngine.Gizmos.matrix = self.transform.localToWorldMatrix;
+	-- local defaultColor = CS.UnityEngine.Gizmos.color;
+	 CS.UnityEngine.Gizmos.color = c;
+	-- local startPoint = new CS.UnityEngine.Vector3(1,1,1);
+	-- local endPoint = new CS.UnityEngine.Vector3(2,2,2);
+	-- print("31");
+	-- CS.UnityEngine.Gizmos.DrawCube(startPoint, endPoint);
+	-- --CS.UnityEngine.Gizmos.DrawCube (new CS.UnityEngine.Vector3 (1, 1, 1), new CS.UnityEngine.Vector3 (1, 1, 1));
+	-- CS.UnityEngine.Gizmos.color = defaultColor;
+	-- CS.UnityEngine.Gizmos.matrix = defaultMatrix;
+	-- print("31");
+end
