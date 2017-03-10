@@ -73,4 +73,15 @@ public class XMeshEditor : XMonoBehaviourEditor {
 
 
 	}
+
+	void DrawVertex()
+	{
+		Mesh currentMesh = filter.sharedMesh;
+		var m = Gizmos.matrix;
+		Gizmos.matrix = filter.transform.localToWorldMatrix;
+		for (int i = 0; i < currentMesh.vertices.Length; i++) {
+			var p = currentMesh.vertices [i];
+
+		}
+	}
 }

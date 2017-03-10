@@ -3,12 +3,14 @@ using System.Collections;
 using wuxingogo.Editor;
 using UnityEditor;
 using System;
+using wuxingogo.Runtime;
 
 
 [CustomEditor(typeof(TeamManager), true)]
 public class TeamManagerEditor : XMonoBehaviourEditor {
 
 	TeamManager teamManager = null;
+	[X]
 	void OnEnable()
 	{
 		teamManager = target as TeamManager;
