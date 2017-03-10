@@ -5,7 +5,7 @@ public class FireBall : SkillBase {
 
 	public GameObject throwBall = null;
 	public GameObject collision = null;
-
+	public float energy = 10;
 	void Start()
 	{
 		var skelegon = human.GetSkeleton (HandsType.RIGHT);
@@ -26,18 +26,17 @@ public class FireBall : SkillBase {
 	void OnBallCollision(SkillColliderMessager messager, Collider other)
 	{
 		var targetHuman = other.GetComponent<Human> ();
-		if (CanTarget (targetHuman)) {
+		if (targetHuman != null && CanTarget (targetHuman)) {
 
+			targetHuman.dataSystem.Damage (energy);
 			if (collision != null) {
 				var go = CreatePrefab (collision);
 				go.SetActive (true);
 				go.transform.position = other.transform.position;
-				messager.gameObject.SetActive (false);
+
 				DestroyGameObject (go, 5);
 			}
-			XLogger.Log ("OnBallCollision");
-			DestroyGameObject (messager.gameObject, 0.0f);
-			DestroyGameObject (gameObject, 5.0f);
+//			XLogger.Log ("OnBallCollision");
 		}
 	}
 

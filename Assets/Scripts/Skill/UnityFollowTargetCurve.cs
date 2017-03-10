@@ -71,9 +71,9 @@ public class UnityFollowTargetCurve : XMonoBehaviour
 		int last = yOffsetCurve.keys.Length - 1;
 		var frame = yOffsetCurve.keys[last];
 		Timer = frame.time;
-		oldDistance = ( target.position - moveTarget.position ).magnitude;
+		oldDistance = ( targetPos - moveTarget.position ).magnitude;
 		oldSpeed = oldDistance / frame.time;
-		this.transform.forward = ( target.position - this.transform.position ).normalized;
+		this.transform.forward = ( targetPos - this.transform.position ).normalized;
 		elapseTimer = 0;
 	}
 
@@ -87,7 +87,11 @@ public class UnityFollowTargetCurve : XMonoBehaviour
 		
 		Vector3 result = GetNextPoint(elapseTimer);
 
-		moveTarget.localPosition = result;
+		if (result == Vector3.zero) {
+			elapseTimer = Timer;
+		} else {
+			moveTarget.localPosition = result;
+		}
 		//XLogger.Break();
 
 
@@ -122,17 +126,39 @@ public class UnityFollowTargetCurve : XMonoBehaviour
 //		Gizmos.color = sourceColor;
 //	}
 
+	void OnDrawGizmosSelected()
+	{
+		Color r = Gizmos.color;
+		Gizmos.color = new Color (0.5f, 0.5f, 0, 0.5f);
+
+//		Matrix4x4 g = Gizmos.matrix;
+//		Gizmos.matrix = transform.localToWorldMatrix;
+//
+//		Gizmos.DrawSphere (Vector3.zero, castRange);
+//
+//		Gizmos.matrix = g;
+//		Gizmos.color = r;
+
+		Gizmos.DrawSphere (targetPos, 1);
+	}
+
 	protected Vector3 GetNextPoint(float timer)
 	{
+		
+
+			
 		if( target != null )
 		{
-			float distance = ( target.position - this.transform.position ).magnitude;
+			Vector3 v = (target.position - this.transform.position);
+			if (v == Vector3.zero)
+				return v;
+			float distance = v.magnitude;
 			float newSpeed = distance / oldDistance * oldSpeed;
 			transform.forward = ( target.position - this.transform.position ).normalized;
 
 			return new Vector3( xOffsetCurve.Evaluate( timer ), yOffsetCurve.Evaluate( timer ), timer * newSpeed );
 		}
-		return  new Vector3( xOffsetCurve.Evaluate( timer ), yOffsetCurve.Evaluate( timer ), oldSpeed * timer );
+		return new Vector3( xOffsetCurve.Evaluate( timer ), yOffsetCurve.Evaluate( timer ), oldSpeed * timer );
 
 	}
 	// Forecast result point

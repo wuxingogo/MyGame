@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Apex.Messages;
 
 public class Boss : Human {
 
@@ -9,6 +10,8 @@ public class Boss : Human {
 	public List<Player> totalEnemies = new List<Player>();
 
 	public FireBall fireballSkill =null;
+	public float attackDistance = 10f;
+	public bool isCloseToEnemy = false;
 	public override void OnInit ()
 	{
 		base.OnInit ();
@@ -19,18 +22,60 @@ public class Boss : Human {
 			var skill = totalSkill [i];
 			if (skill is FireBall) {
 				fireballSkill = skill as FireBall;
-				currentSkill = fireballSkill;
+				nextSkill = new SkillCastStructure ();
+				nextSkill.skillBase = fireballSkill;
 			}
 		}
 	}
 
+	public void CloseToEnemy(Human human)
+	{
+		if (!isCloseToEnemy) {
+			isCloseToEnemy = true;
+			var p1 = transform.position;
+			var p2 = human.transform.position;
+			var v = p2 - p1;
+			Vector3 p = (v.normalized) * attackDistance + transform.position;
+			CmdMoveTo (p);
+		}
+	}
+	public override void OnHangsEnded ()
+	{
+		base.OnHangsEnded ();
+		isCloseToEnemy = false;
+	}
+
+	public override void OnFinishMove (UnitNavigationEventMessage message)
+	{
+		base.OnFinishMove (message);
+		isCloseToEnemy = false;
+	}
+	/*
+	void Update()
+	{
+		SinglePlayerUpdate ();
+	}
+	*/
 	public override void OnUpdate()
 	{
 		var enemy = FindClosestEnemy ();
 
-		transform.forward = (enemy.transform.position - transform.position).normalized;
-		currentSkill = fireballSkill;
-		fireballSkill.Prepare ();
+		if (enemy == null || isHangs)
+			return;
+		
+		var offset = enemy.transform.position - transform.position;
+		var distance = offset.magnitude;
+		var direction = offset.normalized;
+
+		if (distance < attackDistance) {
+			transform.forward = direction;
+			currentSkill = fireballSkill;
+			fireballSkill.Prepare ();
+			nextSkill = new SkillCastStructure ();
+			nextSkill.skillBase = fireballSkill;
+		} else {
+			CloseToEnemy (enemy);
+		}
 	}
 
 	public Player FindClosestEnemy()
@@ -38,6 +83,8 @@ public class Boss : Human {
 		Player result = null;
 		float distance = 999999;
 		for (int i = 0; i < totalEnemies.Count; i++) {
+			if (totalEnemies [i].isDead)
+				continue;
 			float d = (totalEnemies [i].transform.position - transform.position).magnitude;
 			if (d < distance) {
 				distance = d;

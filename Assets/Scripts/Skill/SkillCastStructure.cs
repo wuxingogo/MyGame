@@ -1,5 +1,5 @@
 ﻿//
-// Player.cs
+// SkillCastStructure.cs
 //
 // Author:
 //       wuxingogo <>
@@ -23,18 +23,17 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using System;
 using UnityEngine;
+using System.Collections;
 
-
-public class Player : Human
+public class SkillCastStructure
 {
-	public override void OnInit ()
-	{
-		transform.position = new Vector3(-362.8f, 1.7f, -692.6f);
-		gameObject.name = netId.ToString();
+	public Vector3 point = Vector3.zero;
+	public Human human = null;
+	public SkillBase skillBase = null;
 
+	public void CancelSkill()
+	{
 	}
 }
-
 

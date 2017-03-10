@@ -29,6 +29,7 @@ public class AnimationCtr : XMonoBehaviour {
 	public readonly int FLY_RIGHT_ATTACK_02 = Animator.StringToHash("Fly Melee Right Attack 02");
 	public readonly int FLY_RIGHT_ATTACK_03 = Animator.StringToHash("Fly Melee Right Attack 03");
 	public readonly int FLY_RIGHT_LEFT_ATTACK_01 = Animator.StringToHash("Fly Melee Left Attack 01");
+	public readonly int FLY_DIE = Animator.StringToHash("Fly Die");
 	//--Spear Model--//
 	public readonly int SPEAR_IDLE = Animator.StringToHash("Spear Idle");
 	public readonly int SPEAR_WALK = Animator.StringToHash("Spear Walk");
@@ -47,6 +48,9 @@ public class AnimationCtr : XMonoBehaviour {
 	public readonly int TH_SWORD_ATTACK_01 = Animator.StringToHash("TH Sword Melee Attack 01");
 	public readonly int TH_SWORD_ATTACK_02 = Animator.StringToHash("TH Sword Melee Attack 02");
 	public readonly int TH_SWORD_CAST_SPELL = Animator.StringToHash("TH Sword Cast Spell");
+	public readonly int TH_SWORD_DIE = Animator.StringToHash("TH Sword Die");
+
+	public readonly int CHOP_TREE = Animator.StringToHash("Chop Tree");
 
 	public readonly string LEFT_HAND = "RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigLArm1/RigLArm2/RigLArmPalm/Dummy Prop Left";
 	public readonly string RIGHT_HAND = "RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigRArm1/RigRArm2/RigRArmPalm/Dummy Prop Right";
@@ -74,6 +78,7 @@ public class AnimationCtr : XMonoBehaviour {
 	}
 	int idlePara = 0;
 	int lastBoolPara = 0;
+
 	[X]
 	public void Idle()
 	{
@@ -108,6 +113,50 @@ public class AnimationCtr : XMonoBehaviour {
 			_animator.SetBool (idlePara, true);
 		}
 	}
+	public void CancelIdle()
+	{
+		if (idlePara != 0) {
+			_animator.SetBool (idlePara, false);
+		}
+		DisableAnimation ();
+		switch (weaponType) {
+		case WeaponType.NONE:
+			idlePara = 0;
+			break;
+		case WeaponType.CROSSBOW:
+			idlePara = 0;
+			break;
+		case WeaponType.MELEE:
+			idlePara = 0;
+			break;
+		case WeaponType.FLY:
+			idlePara = FLY_IDLE;
+			break;
+		case WeaponType.SPEAR:
+			idlePara = SPEAR_IDLE;
+			break;
+		case WeaponType.SWORD:
+			idlePara = TH_SWORD_IDLE;
+			break;
+		default:
+			break;
+		}
+
+		if (idlePara != 0) {
+			_animator.SetBool (idlePara, false);
+		}
+	}
+	[X]
+	public void HoldonSkill(bool isBegin)
+	{
+		if (isBegin) {
+			CancelIdle ();
+			EnableAnimationBool (CHOP_TREE);
+		} else {
+			Idle ();
+		}
+	}
+
 	[X]
 	public void Walk()
 	{
@@ -188,6 +237,43 @@ public class AnimationCtr : XMonoBehaviour {
 			break;
 		}
 		EnableAnimationTrigger (animPara);
+	}
+	[X]
+	public void Die()
+	{
+		int animPara = 0;
+
+		switch (weaponType) {
+		case WeaponType.NONE:
+			{
+				XLogger.Log ("The Animator's weapon was null!");
+			}
+			break;
+		case WeaponType.MELEE:
+			animPara = DIE;
+			break;
+		case WeaponType.CROSSBOW:
+			animPara = DIE;
+			break;
+		case WeaponType.FLY:
+			animPara = FLY_DIE;
+			break;
+		case WeaponType.SPEAR:
+			animPara = SPEAR_DIE;
+			break;
+		case WeaponType.SWORD:
+			animPara = TH_SWORD_DIE;
+			break;
+		default:
+			break;
+		}
+		EnableAnimationTrigger (animPara);
+	}
+
+	[X]
+	public void Reborn()
+	{
+		_animator.Play ("Idle");
 	}
 	[X]
 	public void AttackCri()

@@ -32,13 +32,15 @@ public class SkillBase : XMonoBehaviour {
 	public GameObject castCollider = null;
 	public float CDTime = 10f;
 	private float coolingTime = 0f;
+	public float holdOnTime = 0f;
+	public bool isCacheSkill = false;
 	public bool InCD {
 		get{
 			return coolingTime < CDTime;
 		}
 	}
 
-	void OnDrawGizmos ()
+	void OnDrawGizmosSelected()
 	{
 		Color r = Gizmos.color;
 		Gizmos.color = new Color (0.5f, 0.5f, 0, 0.5f);
@@ -50,6 +52,8 @@ public class SkillBase : XMonoBehaviour {
 
 		Gizmos.matrix = g;
 		Gizmos.color = r;
+
+		Gizmos.DrawSphere (castPoint, 1);
 	}
 	[X("Prepare Current Skill")]
 	/// <summary>
@@ -84,13 +88,12 @@ public class SkillBase : XMonoBehaviour {
 	}
 	public virtual void CastHuman(Human other)
 	{
-		if (CanReleaseAtHuman (other)) {
-			if (CanTarget (other)) {
-				targetHuman = other;
-				CreateCastHuman (other);
-				Cooling ();
-			}
-		}
+
+		targetHuman = other;
+		CreateCastHuman (other);
+		Cooling ();
+			
+		
 
 	}
 	public void PrepareCancel()
@@ -104,7 +107,7 @@ public class SkillBase : XMonoBehaviour {
 	public void CreateCastHuman(Human other)
 	{
 		human.Follow (other);
-		if (castCollider == null && !other.IsSkillImmunited()) {
+		if (castCollider == null) {
 			castCollider = new GameObject ("SkillCastRanger");
 			var sphere = castCollider.AddComponent<SphereCollider> ();
 			castCollider.transform.position = other.transform.position;
@@ -112,6 +115,7 @@ public class SkillBase : XMonoBehaviour {
 			sphere.isTrigger = true;
 			var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
 			skillCollider.human = human;
+			skillCollider.targetHuman = other;
 			skillCollider.onCollisionStay = () => {
 				human.FaceTo(other.transform.position);
 				human.Stop();
@@ -124,7 +128,7 @@ public class SkillBase : XMonoBehaviour {
 
 	public void CreateCastRangeCollider(Vector3 point)
 	{
-		human.MoveTo (point);
+		human.CmdMoveTo (point);
 		if (castCollider == null) {
 			castCollider = new GameObject ("SkillCastRanger");
 			var sphere = castCollider.AddComponent<SphereCollider> ();
@@ -202,15 +206,13 @@ public class SkillBase : XMonoBehaviour {
 //		XLogger.Log ("DestSelect", this.gameObject);
 		if (targetType == TargetType.Self && human == goal) {
 			return true;
-		} else if (targetType == TargetType.Self && human != goal) {
+		} else if (targetType == TargetType.Other && human != goal) {
 			return true;
 		} else if (targetType == TargetType.Enemy && !TeamManager.instance.GetRelation (human.teamCatriay, goal.teamCatriay)) {
 			return true;
 		} else if (targetType == TargetType.Friends && TeamManager.instance.GetRelation (human.teamCatriay, goal.teamCatriay)) {
 			return true;
-		} else {
-//			XLogger.Log ("Target has error", this.gameObject);
-		}
+		} 
 		return false;
 
 	}
@@ -228,7 +230,7 @@ public class SkillBase : XMonoBehaviour {
 	}
 	public virtual bool CanRelease()
 	{
-		if (coolingTime > CDTime) {
+		if (coolingTime > CDTime && !human.isHangs) {
 			return true;
 		}
 		return false;
@@ -242,7 +244,7 @@ public class SkillBase : XMonoBehaviour {
 	}
 	public virtual bool CanReleaseAtHuman(Human human)
 	{
-		if (CanRelease () && human.IsSkillImmunited()) {
+		if (CanRelease () && !human.IsSkillImmunited() && CanTarget (human)) {
 			return true;
 		}
 		return false;

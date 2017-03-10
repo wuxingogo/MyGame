@@ -12,6 +12,8 @@ public class Zhiliaobo : SkillTargetBase {
 	public GameObject reEmitCollider = null;
 	public float destroyTime = 5f;
 	public UnityFollowTargetCurve followTarget = null;
+
+	public GameObject hpEffect = null;
 	void Start()
 	{
 		
@@ -21,8 +23,7 @@ public class Zhiliaobo : SkillTargetBase {
 			reEmitCollider.gameObject.SetActive (false);
 			messager.onCollisionEnter = OnColliderEnter;
 		}
-//		
-//		trailRenderer = CreateComponent<TrailRenderer>(trailRenderer);
+
 		Emit();
 
 	}
@@ -85,6 +86,11 @@ public class Zhiliaobo : SkillTargetBase {
 	public void OnSkillFinish(Human targetHuman)
 	{
 		XLogger.Log (targetHuman.name);
+
+		targetHuman.dataSystem.RecoveryHP (50);
+
+		var go = CreatePrefab (targetHuman.transform, hpEffect);
+		Destroy (go, 5);
 	}
 
 	public override void OnUpdate ()

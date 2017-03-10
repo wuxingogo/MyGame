@@ -1,5 +1,5 @@
 ﻿//
-// Player.cs
+// UnityExtendCurveTemplate.cs
 //
 // Author:
 //       wuxingogo <>
@@ -23,18 +23,23 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using System;
 using UnityEngine;
+using System.Collections;
+using wuxingogo.Runtime;
 
-
-public class Player : Human
+[CreateAssetMenu(fileName = "UnityExtendCurveTemplate")]
+public class UnityExtendCurveTemplate : XScriptableObject
 {
-	public override void OnInit ()
-	{
-		transform.position = new Vector3(-362.8f, 1.7f, -692.6f);
-		gameObject.name = netId.ToString();
 
+	public AnimationCurve xCurve = AnimationCurve.Linear(0,0,1,0);
+	public AnimationCurve yCurve = AnimationCurve.Linear(0,0,1,0);
+	public AnimationCurve zCurve = AnimationCurve.Linear(0,0,1,10);
+
+	public void Create(UnityExtendCurve curve)
+	{
+		curve.xCurve = xCurve;
+		curve.yCurve = yCurve;
+		curve.zCurve = zCurve;
 	}
 }
-
 

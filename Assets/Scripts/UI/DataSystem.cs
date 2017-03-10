@@ -38,7 +38,6 @@ public class DataSystem : XMonoBehaviour
 	public bool Stunning = false;
 	public bool SpellImmunity = false;
 	public bool Immunity = false;
-	public bool IsDead = false;
 
 	public HPComponent hpSlider = null;
 	public Human human = null;
@@ -59,14 +58,25 @@ public class DataSystem : XMonoBehaviour
 
 			if (HP == 0) {
 				human.isDead = true;
+				human.Animator.Die ();
 			}
 		}
+	}
+
+	[X]
+	public void Reborn()
+	{
+		if (human.isDead) {
+			human.isDead = false;
+			human.Animator.Reborn ();
+		}
+		HP = 1;
 	}
 	[X]
 	public void RecoveryHP(float energy)
 	{
 		if (human.isDead) {
-			human.isDead = false;
+			return;
 		}
 		HP = Mathf.Min (MaxHP, HP + energy);
 		hpSlider.ChangeHP (HP, MaxHP);

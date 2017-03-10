@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿//#define UNITY_NETWORK
+
+using UnityEngine;
 using System.Collections;
 using Apex.Messages;
 using Apex.Services;
@@ -7,9 +9,10 @@ using wuxingogo.Runtime;
 using System.Collections.Generic;
 using System;
 using HighlightingSystem;
+using UnityEngine.Networking;
 
 
-public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
+public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 
 	public GameObject rendererable = null;
 	AnimationCtr _animationCtr = null;
@@ -23,6 +26,9 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 	public TeamCatriay teamCatriay = TeamCatriay.Team1;
 	public bool isMine = false;
 	public Human followTarget = null;
+	public Vector3 goalPoint = Vector3.zero;
+	public SkillCastStructure nextSkill = null;
+	public SkillHoldOn holdOnSkill = null;
 	public virtual void OnInit()
 	{
 		
@@ -63,6 +69,10 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 
 	#region IHandleMessage implementation
 
+	public virtual void OnFinishMove(UnitNavigationEventMessage message){
+	}
+	public virtual void OnBeginMove(UnitNavigationEventMessage message){
+	}
 	public void Handle (UnitNavigationEventMessage message)
 	{
 		if (message.entity != gameObject ) {
@@ -72,6 +82,7 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 		{
 		case UnitNavigationEventMessage.Event.BeginPath:
 			_animationCtr.Walk ();
+			OnBeginMove (message);
 			break;
 		case UnitNavigationEventMessage.Event.DestinationReached:
 		case UnitNavigationEventMessage.Event.WaypointReached:
@@ -80,6 +91,7 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 
 				//XLogger.Log( string.Format( "Unit '{0}' ({1}) reports: {2} at position: {3}.", message.entity.name, message.entity.transform.position, message.eventCode, message.destination ) );
 				_animationCtr.Idle ();
+				OnFinishMove (message);
 				break;
 			}
 
@@ -89,6 +101,7 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 		case UnitNavigationEventMessage.Event.Stuck:
 			{
 				_animationCtr.Idle ();
+				OnFinishMove (message);
 				break;
 			}
 		}
@@ -103,37 +116,60 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 	public List<SkillBase> totalSkill = new List<SkillBase>();
 	void Update()
 	{
-		
-		if (isMine) {
+		#if UNITY_NETWORK
+		if (!isLocalPlayer)
+		{
+			return;
+		}
+		#endif
+		SinglePlayerUpdate ();
+	}
+
+	public virtual void SinglePlayerUpdate()
+	{
+		if (isMine && hangTime <= 0) {
 			var point = GetMousePoint();
 			for (int i = 0; i < totalSkill.Count; i++) {
 				if (Input.GetKeyUp (totalSkill [i].keyCode) && totalSkill [i].CanRelease() ) {
-					
+
 					currentSkill = totalSkill [i];
 					currentSkill.Prepare ();
-					InputManager.Instance.SetSelected ();
+
+					if (currentSkill.caseType == CastType.Immatie) {
+						nextSkill = new SkillCastStructure ();
+						nextSkill.skillBase = currentSkill;
+					}
+					else{
+						nextSkill = null;
+						InputManager.Instance.SetSelected ();
+					}
 				}
 			}
 
 			if (Input.GetButtonUp("Fire1")) {
-				
+
 				if (currentSkill != null) {
 					if (currentSkill.caseType == CastType.Point) {
-						castSkillPoint = point;
 						currentSkill.CastPoint (point);
-					} else if (currentSkill.caseType == CastType.Target) {
+						nextSkill = new SkillCastStructure ();
+						nextSkill.skillBase = currentSkill;
+						nextSkill.point = point;
+					} else if (currentSkill.caseType == CastType.Target && clickedHuman != null && currentSkill.CanReleaseAtHuman (clickedHuman)) {
 						currentSkill.CastHuman (clickedHuman);
+						nextSkill = new SkillCastStructure ();
+						nextSkill.human = clickedHuman;
+						nextSkill.skillBase = currentSkill;
 					}
 					InputManager.Instance.SetUnSelected ();
 				} 
 			} else if(Input.GetButtonUp ("Fire2")){
 				CancelFollow ();
-
+				CancleHoldOnSkill ();
 				if (clickedHuman != null && clickedHuman != this) {
 					Follow (clickedHuman);
 					clickedHuman = null;
 				} else {
-					MoveTo (point);
+					CmdMoveTo (point);
 				}
 			}
 
@@ -142,36 +178,106 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 			}
 		}
 		if (followTarget != null)
-			MoveTo (followTarget.transform.position);
+			CmdMoveTo (followTarget.transform.position);
 		for (int i = 0; i < totalSkill.Count; i++) {
 			totalSkill [i].UpdateCoolCD ();
 		}
+
+		if (isHangs) {
+			hangTime -= Time.deltaTime;
+			if(hangTime <= 0){
+				isHangs = false;
+				OnHangsEnded ();
+			}
+		}
+
+		if (currentSkill != null && !currentSkill.isCacheSkill && currentSkill.holdOnTime <= 0) {
+			CancleHoldOnSkill ();
+		}
+
 		OnUpdate ();
+	}
+	public void SetCurrentSkill()
+	{
+		
 	}
 	public virtual void OnUpdate()
 	{
 	}
-	public Vector3 castSkillPoint = Vector3.zero;
 	[X]
 	public void StopForIdle()
 	{
 		CancelFollow ();
 		FinishSkill ();
+		CancleHoldOnSkill ();
 		Stop ();
 	}
-	public void MoveTo(Vector3 point)
+
+	public void CancleHoldOnSkill()
 	{
-		facade.MoveTo (point, false);
+		if (holdOnSkill != null) {
+
+			holdOnSkill.OnSkillEnd ();
+
+			currentSkill = null;
+			nextSkill = null;
+			holdOnSkill = null;
+		}
 	}
+
+	#if UNITY_NETWORK
+	[Command]
+	public void CmdMoveTo(Vector3 point)
+	{
+		
+		if (isServer) 
+			RpcMoveTo (point);
+		
+	}
+	[ClientRpc]
+	public void RpcMoveTo(Vector3 point){
+		if (!isDead && !isHangs) {
+			facade.MoveTo (point, false);
+			goalPoint = point;
+		}
+	}
+	#else
+	public void CmdMoveTo(Vector3 point)
+	{
+		if (!isDead && !isHangs) {
+			facade.MoveTo (point, false);
+			goalPoint = point;
+		}
+	}
+	#endif
+
 	public void Stop()
 	{
 		facade.Stop ();
 		_animationCtr.Idle ();
 	}
+	public float hangTime = 0f;
+	public bool isHangs = false;
+	public virtual void Hangs(float time){
+		hangTime += time;
+		if (hangTime > 0) {
+			StopForIdle ();
+			isHangs = true;
+			Animator.Die ();
+		}
+	}
+	public virtual void OnHangsEnded()
+	{
+		facade.Resume ();
+		Animator.Reborn ();
+	}
+
 	public void FaceTo(Vector3 point)
 	{
-		CancelFollow();
-		transform.forward = (point - transform.position).normalized;
+		if (!isHangs) {
+			CancelFollow ();
+			transform.forward = (point - transform.position).normalized;
+		}
 	}
 	public Human clickedHuman = null;
 	Vector3 GetMousePoint()
@@ -207,11 +313,13 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 	}
 	public void FinishSkill()
 	{
+		
 		if (currentSkill != null) {
 			currentSkill.PrepareCancel ();
-			currentSkill = null;
 			InputManager.Instance.SetUnSelected ();
+
 		}
+		nextSkill = null;
 	}
 	public Action OnDestroyAction = null;
 	void DestroyMyself()
@@ -234,6 +342,7 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 			currentSkill.transform.SetParent (transform);
 			currentSkill.gameObject.SetActive (false);
 			currentSkill.ResetCD ();
+			currentSkill.isCacheSkill = true;
 			totalSkill [i] = currentSkill;
 		}
 
@@ -259,13 +368,18 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 	}
 	public void CastSkill()
 	{
-		if (currentSkill != null) {
-			var newSkill = currentSkill.CreatePrefab(transform,currentSkill.gameObject);
-			newSkill.gameObject.tag = TeamTag;
-			newSkill.transform.parent = null;
-			newSkill.gameObject.SetActive (true);
-			var skillBase = newSkill.GetComponent<SkillBase> ();
-			skillBase.targetHuman = clickedHuman;
+		if (nextSkill != null) {
+//			if (clickedHuman == null && currentSkill is SkillTargetBase) {
+//				return;
+//			}
+			var currentSkill = nextSkill.skillBase.CreatePrefab(transform,nextSkill.skillBase.gameObject).GetComponent<SkillBase>();
+			currentSkill.gameObject.tag = TeamTag;
+			currentSkill.transform.parent = null;
+			currentSkill.isCacheSkill = false;
+			currentSkill.gameObject.SetActive (true);
+			var skillBase = currentSkill.GetComponent<SkillBase> ();
+			skillBase.targetHuman = nextSkill.human;
+			skillBase.castPoint = nextSkill.point;
 			FinishSkill ();
 		}
 	}
@@ -301,6 +415,7 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 
 	public DataSystem dataSystem = null;
 	private bool _isDead = false;
+	[X]
 	public bool isDead{
 		get{
 			return _isDead;
@@ -316,6 +431,12 @@ public class Human : XMonoBehaviour, IHandleMessage<UnitNavigationEventMessage>{
 	}
 	public bool IsSkillImmunited()
 	{
-		return !dataSystem.SpellImmunity || !dataSystem.Immunity;
+		return dataSystem.SpellImmunity || dataSystem.Immunity;
 	}
+
+	void OnDrawGizmosSelected (){
+		if(goalPoint != Vector3.zero)
+			Gizmos.DrawSphere (goalPoint, 1);
+	}
+
 }
