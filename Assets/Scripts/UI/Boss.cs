@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Apex.Messages;
+using UnityEngine.Networking;
+using wuxingogo.Runtime;
 
 public class Boss : Human {
 
@@ -12,6 +14,8 @@ public class Boss : Human {
 	public FireBall fireballSkill =null;
 	public float attackDistance = 10f;
 	public bool isCloseToEnemy = false;
+	public NetworkIdentity identity = null;
+
 	public override void OnInit ()
 	{
 		base.OnInit ();
@@ -26,6 +30,7 @@ public class Boss : Human {
 				nextSkill.skillBase = fireballSkill;
 			}
 		}
+		identity = GetComponent<NetworkIdentity> ();
 	}
 
 	public void CloseToEnemy(Human human)
@@ -50,19 +55,15 @@ public class Boss : Human {
 		base.OnFinishMove (message);
 		isCloseToEnemy = false;
 	}
-	/*
-	void Update()
+
+	public override void SinglePlayerUpdate()
 	{
-		SinglePlayerUpdate ();
-	}
-	*/
-	public override void OnUpdate()
-	{
+		base.SinglePlayerUpdate ();
 		var enemy = FindClosestEnemy ();
 
 		if (enemy == null || isHangs)
 			return;
-		
+
 		var offset = enemy.transform.position - transform.position;
 		var distance = offset.magnitude;
 		var direction = offset.normalized;
@@ -70,12 +71,21 @@ public class Boss : Human {
 		if (distance < attackDistance) {
 			transform.forward = direction;
 			currentSkill = fireballSkill;
-			fireballSkill.Prepare ();
+			fireballSkill.Cast ();
 			nextSkill = new SkillCastStructure ();
 			nextSkill.skillBase = fireballSkill;
 		} else {
 			CloseToEnemy (enemy);
 		}
+	}
+
+	void Update()
+	{
+		if (!isServer) {
+			return;
+		}
+		SinglePlayerUpdate ();
+
 	}
 
 	public Player FindClosestEnemy()

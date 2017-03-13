@@ -55,11 +55,11 @@ public class SkillBase : XMonoBehaviour {
 
 		Gizmos.DrawSphere (castPoint, 1);
 	}
-	[X("Prepare Current Skill")]
+	[X("Immatiely Cast Skill")]
 	/// <summary>
 	/// On Shot key was press
 	/// </summary>
-	public void Prepare()
+	public void Cast()
 	{
 		switch (caseType) {
 		case CastType.Immatie:
@@ -77,6 +77,7 @@ public class SkillBase : XMonoBehaviour {
 			break;
 		}
 	}
+	[X]
 	public void CastPoint(Vector3 point)
 	{
 		if (CanReleaseAtPos (point)) {
@@ -86,6 +87,7 @@ public class SkillBase : XMonoBehaviour {
 		}
 
 	}
+	[X]
 	public virtual void CastHuman(Human other)
 	{
 

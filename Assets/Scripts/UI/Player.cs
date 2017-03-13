@@ -23,18 +23,54 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using System;
+
 using UnityEngine;
+using UnityEngine.Networking;
+using UnityStandardAssets.Utility;
+using wuxingogo.Runtime;
+
 
 
 public class Player : Human
 {
+	
 	public override void OnInit ()
 	{
-		transform.position = new Vector3(-362.8f, 1.7f, -692.6f);
-		gameObject.name = netId.ToString();
+		if (isMine) {
+			var totalPoints = ResourceManager.instance.bornPoint;
+			var index = Random.Range (0, totalPoints.Count - 1);
+			var p = totalPoints [index];
+			NetworkListener.Instance.CmdSynchronizePoint (this.netId.Value, p);
+			gameObject.name = "Player_" + netId.ToString();
+
+			var t = FindObjectOfType<FollowTarget> ();
+			t.SetTarget (transform);
+		}
 
 	}
+	public GameObject plantPrefab;
+	[X]
+	[Server]
+	public void ServerSpawnPlant(Player player)
+	{
+		var plant = (GameObject)Instantiate(plantPrefab, transform.position, transform.rotation);
+		NetworkServer.Spawn(plant);
+		var component = plant.GetComponent<NetworkBehaviour> ();
+		NetworkIdentity identidy = plant.GetComponent<NetworkIdentity>();
+		identidy.AssignClientAuthority (this.connectionToServer);
+	}
+	[X]
+	[Command]
+	public void CmdSpawnPlant()
+	{
+		var plant = (GameObject)Instantiate(plantPrefab, transform.position, transform.rotation);
+		NetworkServer.Spawn(plant);
+//		var component = plant.GetComponent<NetworkBehaviour> ();
+		NetworkIdentity identidy = plant.GetComponent<NetworkIdentity>();
+//		identidy.AssignClientAuthority (this.connectionToServer);
+		NetworkServer.ReplacePlayerForConnection(this.connectionToServer, plant, this.playerControllerId);
+	}
+
 }
 
 

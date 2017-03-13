@@ -14,7 +14,16 @@ public class ResourceManager : GameManager<ResourceManager> {
 	public List<string> accessories = new List<string>();
 	public List<string> weapons		= new List<string>();
 
-
+	public List<Vector3> bornPoint = new List<Vector3>();
+	[X]
+	public Transform newPoint{
+		get{
+			return null;
+		}
+		set{
+			bornPoint.Add (value.position);
+		}
+	}
 
 	
 }

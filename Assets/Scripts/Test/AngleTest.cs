@@ -1,5 +1,5 @@
 ﻿//
-// DataSystem.cs
+// AngleTest.cs
 //
 // Author:
 //       wuxingogo <>
@@ -27,67 +27,56 @@ using System;
 using wuxingogo.Runtime;
 using UnityEngine;
 
-
-public class DataSystem : XMonoBehaviour
+public class AngleTest : XMonoBehaviour
 {
-	public float HP = 100;
-	public float MaxHP = 100;
+	public Transform t1 = null;
 
-	public float MoveSpeed = 5;
-
-	public bool Stunning = false;
-	public bool SpellImmunity = false;
-	public bool Immunity = false;
-
-	public HPComponent hpSlider = null;
-	public Human human = null;
-
-	void Start()
-	{
-		hpSlider = GameObjectUtil.CreatePrefab<HPComponent>(HPPanel.Instance.transform, "Prefabs/UI/HPSlider");
-		hpSlider.followTarget = transform;
-
-	}
-
+	public float Radius = 5;
+	public Color color = Color.red;
+	public Vector3 dir = Vector3.zero;
+	private static int x;
 	[X]
-	public void Damage(float damage)
+	public static void P()
 	{
-		if (!human.isDead) {
-			HP = Mathf.Max (0, HP - damage);
-			hpSlider.ChangeHP (HP, MaxHP);
-
-			if (HP == 0) {
-				human.isDead = true;
-				human.Animator.Die ();
-			}
-		}
-	}
-
-	[X]
-	public void Reborn()
-	{
-		if (human.isDead) {
-			human.isDead = false;
-			human.Animator.Reborn ();
-		}
-		HP = 1;
+		XLogger.Log ("P");
 	}
 	[X]
-	public void RecoveryHP(float energy)
-	{
-		if (human.isDead) {
-			return;
+	public static int v{
+		get{
+			return x;
+		}set{
+			x = value;
 		}
-		HP = Mathf.Min (MaxHP, HP + energy);
-		hpSlider.ChangeHP (HP, MaxHP);
 	}
-
-	void OnDestroy()
+	[X]
+	public float angle{
+		get{
+			var p1 = transform.position;
+			var p2 = t1.position;
+			var v = p2 - p1;
+			dir = (v.normalized) * Radius;
+			return 0;
+		}
+	}
+	void OnDrawGizmos ()
 	{
-		Destroy (hpSlider.gameObject);
+		var m = Gizmos.matrix;
+		Gizmos.matrix = transform.localToWorldMatrix;
+
+		var c = Gizmos.color;
+		Gizmos.color = color;
+
+
+		Gizmos.DrawSphere (Vector3.zero, Radius);
+
+
+		Gizmos.color = c;
+		Gizmos.matrix = m;
+
+		if (dir != Vector3.zero) {
+			Gizmos.DrawCube (dir + transform.position, Vector3.one);
+		}
 	}
-
-
 }
 
 

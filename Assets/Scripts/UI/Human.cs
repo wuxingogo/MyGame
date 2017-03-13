@@ -1,5 +1,4 @@
-﻿//#define UNITY_NETWORK
-
+﻿
 using UnityEngine;
 using System.Collections;
 using Apex.Messages;
@@ -117,7 +116,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	void Update()
 	{
 		#if UNITY_NETWORK
-		if (!isLocalPlayer)
+		if (!isMine )
 		{
 			return;
 		}
@@ -133,7 +132,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 				if (Input.GetKeyUp (totalSkill [i].keyCode) && totalSkill [i].CanRelease() ) {
 
 					currentSkill = totalSkill [i];
-					currentSkill.Prepare ();
+					currentSkill.Cast ();
 
 					if (currentSkill.caseType == CastType.Immatie) {
 						nextSkill = new SkillCastStructure ();
@@ -197,6 +196,17 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 
 		OnUpdate ();
 	}
+	public void CmdMoveTo(Vector3 point)
+	{
+		NetworkListener.Instance.CmdMoveTo (this.netId.Value, point);
+	}
+	public void MoveTo(Vector3 point)
+	{
+		if (!isDead && !isHangs) {
+			facade.MoveTo (point, false);
+			goalPoint = point;
+		}
+	}
 	public void SetCurrentSkill()
 	{
 		
@@ -225,31 +235,12 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		}
 	}
 
-	#if UNITY_NETWORK
-	[Command]
-	public void CmdMoveTo(Vector3 point)
-	{
-		
-		if (isServer) 
-			RpcMoveTo (point);
-		
-	}
-	[ClientRpc]
 	public void RpcMoveTo(Vector3 point){
 		if (!isDead && !isHangs) {
 			facade.MoveTo (point, false);
 			goalPoint = point;
 		}
 	}
-	#else
-	public void CmdMoveTo(Vector3 point)
-	{
-		if (!isDead && !isHangs) {
-			facade.MoveTo (point, false);
-			goalPoint = point;
-		}
-	}
-	#endif
 
 	public void Stop()
 	{
@@ -369,9 +360,6 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	public void CastSkill()
 	{
 		if (nextSkill != null) {
-//			if (clickedHuman == null && currentSkill is SkillTargetBase) {
-//				return;
-//			}
 			var currentSkill = nextSkill.skillBase.CreatePrefab(transform,nextSkill.skillBase.gameObject).GetComponent<SkillBase>();
 			currentSkill.gameObject.tag = TeamTag;
 			currentSkill.transform.parent = null;
@@ -439,4 +427,27 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			Gizmos.DrawSphere (goalPoint, 1);
 	}
 
+
+
+	#if UNITY_NETWORK
+	[X]
+	[Command]
+	public void CmdSynchronizePoint(Vector3 point)
+	{
+
+		if (isServer) 
+			RpcSynchronizePoint (point);
+
+	}
+	[X]
+	[ClientRpc]
+	public void RpcSynchronizePoint(Vector3 point){
+		transform.position = point;
+	}
+	#else
+	public void CmdSynchronizePoint(Vector3 point)
+	{
+	transform.position = point;
+	}
+	#endif
 }
