@@ -26,6 +26,7 @@
 using System;
 using wuxingogo.Runtime;
 using UnityEngine;
+using UnityEngine.Networking;
 
 
 public class DataSystem : XMonoBehaviour

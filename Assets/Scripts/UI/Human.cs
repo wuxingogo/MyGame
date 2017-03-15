@@ -22,16 +22,29 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	}
 	IUnitFacade facade = null;
 	public string TeamTag = "Units_0";
+	public int teamID = 0;
 	public TeamCatriay teamCatriay = TeamCatriay.Team1;
+	[System.NonSerialized]
+	[X]
 	public bool isMine = false;
+	[System.NonSerialized]
+	[X]
+	public bool isNetInit = false;
+
+	[System.NonSerialized]
+	[X]
+	public bool isLocalInit = false;
+	
 	public Human followTarget = null;
 	public Vector3 goalPoint = Vector3.zero;
 	public SkillCastStructure nextSkill = null;
 	public SkillHoldOn holdOnSkill = null;
+
 	public virtual void OnInit()
 	{
-		
+		gameObject.SendMessage ("OnHumanFinish", this, SendMessageOptions.DontRequireReceiver);
 	}
+
 	void Start()
 	{
 		rendererable = GameObjectUtil.CreatePrefab (transform, rendererable);
@@ -48,8 +61,6 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		HighlightingOff();
 
 		CacheSkill ();
-
-		OnInit ();
 	}
 
 	public Transform GetSkeleton(HandsType handsType)
@@ -116,12 +127,46 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	void Update()
 	{
 		#if UNITY_NETWORK
-		if (!isMine )
+		if( !isNetInit )
 		{
 			return;
 		}
+		if(!isLocalInit)
+		{
+			OnInit ();
+			isLocalInit = true;
+		}
+		if (!isMine)
+			return;
 		#endif
 		SinglePlayerUpdate ();
+	}
+
+	public void OnNetworkFireSkillWithDirection(int skillIndex, Vector3 direction)
+	{
+		currentSkill = totalSkill [skillIndex];
+		currentSkill.CastDirection (direction);
+		nextSkill = new SkillCastStructure ();
+		nextSkill.skillBase = totalSkill[skillIndex];
+
+	}
+
+	public void OnNetworkFireSkillWithHuman(int skillIndex, Human human)
+	{
+		currentSkill = totalSkill [skillIndex];
+		currentSkill.CastHuman (human);
+		nextSkill = new SkillCastStructure ();
+		nextSkill.skillBase = totalSkill[skillIndex];
+		nextSkill.human = clickedHuman;
+	}
+
+	public void OnNetworkFireSkillWithPoint(int skillIndex, Vector3 point)
+	{
+		currentSkill = totalSkill [skillIndex];
+		currentSkill.CastPoint (point);
+		nextSkill = new SkillCastStructure ();
+		nextSkill.skillBase = totalSkill[skillIndex];
+		nextSkill.human = clickedHuman;
 	}
 
 	public virtual void SinglePlayerUpdate()
@@ -132,7 +177,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 				if (Input.GetKeyUp (totalSkill [i].keyCode) && totalSkill [i].CanRelease() ) {
 
 					currentSkill = totalSkill [i];
-					currentSkill.Cast ();
+					currentSkill.CastDirection (transform.forward);
 
 					if (currentSkill.caseType == CastType.Immatie) {
 						nextSkill = new SkillCastStructure ();
@@ -326,6 +371,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	{
 		for (int i = 0; i < totalSkill.Count; i++) {
 			var currentSkill = totalSkill [i];
+
 			var go = Instantiate (currentSkill.gameObject);
 			go.tag = TeamTag;
 			currentSkill = go.GetComponent<SkillBase>();
@@ -360,14 +406,15 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	public void CastSkill()
 	{
 		if (nextSkill != null) {
-			var currentSkill = nextSkill.skillBase.CreatePrefab(transform,nextSkill.skillBase.gameObject).GetComponent<SkillBase>();
-			currentSkill.gameObject.tag = TeamTag;
-			currentSkill.transform.parent = null;
-			currentSkill.isCacheSkill = false;
-			currentSkill.gameObject.SetActive (true);
-			var skillBase = currentSkill.GetComponent<SkillBase> ();
-			skillBase.targetHuman = nextSkill.human;
-			skillBase.castPoint = nextSkill.point;
+			var newSkill = nextSkill.skillBase.CreatePrefab(transform,nextSkill.skillBase.gameObject).GetComponent<SkillBase>();
+			nextSkill.skillBase.Cooling ();
+
+			newSkill.gameObject.tag = TeamTag;
+			newSkill.transform.parent = null;
+			newSkill.isCacheSkill = false;
+			newSkill.gameObject.SetActive (true);
+			newSkill.targetHuman = nextSkill.human;
+			newSkill.castPoint = nextSkill.point;
 			FinishSkill ();
 		}
 	}

@@ -59,13 +59,13 @@ public class SkillBase : XMonoBehaviour {
 	/// <summary>
 	/// On Shot key was press
 	/// </summary>
-	public void Cast()
+	public void CastDirection(Vector3 direction)
 	{
 		switch (caseType) {
 		case CastType.Immatie:
 			if (CanRelease ()) {
+				human.transform.forward = direction;
 				human.Animator.AttackNormal ();
-				Cooling ();
 			}
 			break;
 		case CastType.Point:
@@ -83,7 +83,7 @@ public class SkillBase : XMonoBehaviour {
 		if (CanReleaseAtPos (point)) {
 			castPoint = point;
 			CreateCastRangeCollider (point);
-			Cooling ();
+
 		}
 
 	}
@@ -93,7 +93,7 @@ public class SkillBase : XMonoBehaviour {
 
 		targetHuman = other;
 		CreateCastHuman (other);
-		Cooling ();
+
 			
 		
 
@@ -140,6 +140,7 @@ public class SkillBase : XMonoBehaviour {
 			var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
 			skillCollider.human = human;
 			skillCollider.onCollisionStay = () => {
+				
 				human.Stop();
 				human.FaceTo(point);
 				human.Animator.AttackNormal ();

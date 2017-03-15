@@ -36,6 +36,17 @@ public class Player : Human
 	
 	public override void OnInit ()
 	{
+		
+		var listeners = FindObjectsOfType<NetworkListener> ();
+		if (NetworkListener.Instance == null) {
+			isMine = false;
+			return;
+		}
+		for (int i = 0; i < listeners.Length; i++) {
+			if (listeners [i].isLocalPlayer && listeners[i].teamID == teamID) {
+				isMine = true;
+			}
+		}
 		if (isMine) {
 			var totalPoints = ResourceManager.instance.bornPoint;
 			var index = Random.Range (0, totalPoints.Count - 1);
@@ -47,28 +58,8 @@ public class Player : Human
 			t.SetTarget (transform);
 		}
 
-	}
-	public GameObject plantPrefab;
-	[X]
-	[Server]
-	public void ServerSpawnPlant(Player player)
-	{
-		var plant = (GameObject)Instantiate(plantPrefab, transform.position, transform.rotation);
-		NetworkServer.Spawn(plant);
-		var component = plant.GetComponent<NetworkBehaviour> ();
-		NetworkIdentity identidy = plant.GetComponent<NetworkIdentity>();
-		identidy.AssignClientAuthority (this.connectionToServer);
-	}
-	[X]
-	[Command]
-	public void CmdSpawnPlant()
-	{
-		var plant = (GameObject)Instantiate(plantPrefab, transform.position, transform.rotation);
-		NetworkServer.Spawn(plant);
-//		var component = plant.GetComponent<NetworkBehaviour> ();
-		NetworkIdentity identidy = plant.GetComponent<NetworkIdentity>();
-//		identidy.AssignClientAuthority (this.connectionToServer);
-		NetworkServer.ReplacePlayerForConnection(this.connectionToServer, plant, this.playerControllerId);
+		base.OnInit ();
+
 	}
 
 }

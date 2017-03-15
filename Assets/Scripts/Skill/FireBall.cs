@@ -28,7 +28,8 @@ public class FireBall : SkillBase {
 		var targetHuman = other.GetComponent<Human> ();
 		if (targetHuman != null && CanTarget (targetHuman)) {
 
-			targetHuman.dataSystem.Damage (energy);
+			//targetHuman.dataSystem.Damage (energy);
+			NetworkListener.Instance.CmdDamage(targetHuman.netId.Value, energy);
 			if (collision != null) {
 				var go = CreatePrefab (collision);
 				go.SetActive (true);

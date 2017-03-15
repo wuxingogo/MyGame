@@ -69,9 +69,9 @@ public class Boss : Human {
 		var direction = offset.normalized;
 
 		if (distance < attackDistance) {
-			transform.forward = direction;
+			
 			currentSkill = fireballSkill;
-			fireballSkill.Cast ();
+			fireballSkill.CastDirection (direction);
 			nextSkill = new SkillCastStructure ();
 			nextSkill.skillBase = fireballSkill;
 		} else {
@@ -83,6 +83,11 @@ public class Boss : Human {
 	{
 		if (!isServer) {
 			return;
+		}
+		if(!isLocalInit)
+		{
+			OnInit ();
+			isLocalInit = true;
 		}
 		SinglePlayerUpdate ();
 
