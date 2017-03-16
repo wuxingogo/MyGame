@@ -27,7 +27,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	[System.NonSerialized]
 	[X]
 	public bool isMine = false;
-	[System.NonSerialized]
+	[SyncVar]
 	[X]
 	public bool isNetInit = false;
 
@@ -37,7 +37,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	
 	public Human followTarget = null;
 	public Vector3 goalPoint = Vector3.zero;
-	public SkillCastStructure nextSkill = null;
+	public SkillReadyModel readyModel = null;
 	public SkillHoldOn holdOnSkill = null;
 
 	public virtual void OnInit()
@@ -68,11 +68,11 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		return _animationCtr.GetSkeleton (handsType);
 	}
 
-	void OnEnable()
+	public virtual void OnEnable()
 	{
 		GameServices.messageBus.Subscribe( this );
 	}
-	void OnDisable()
+	public virtual void OnDisable()
 	{
 		GameServices.messageBus.Unsubscribe( this );
 	}
@@ -123,6 +123,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 
 
 	public SkillBase currentSkill = null;
+	public int currentSkillIndex = -1;
 	public List<SkillBase> totalSkill = new List<SkillBase>();
 	void Update()
 	{
@@ -136,8 +137,6 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			OnInit ();
 			isLocalInit = true;
 		}
-		if (!isMine)
-			return;
 		#endif
 		SinglePlayerUpdate ();
 	}
@@ -145,46 +144,66 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	public void OnNetworkFireSkillWithDirection(int skillIndex, Vector3 direction)
 	{
 		currentSkill = totalSkill [skillIndex];
-		currentSkill.CastDirection (direction);
-		nextSkill = new SkillCastStructure ();
-		nextSkill.skillBase = totalSkill[skillIndex];
+//		currentSkill.CastDirection (direction);
+		readyModel = new SkillReadyModel ();
+		readyModel.skillBase = totalSkill[skillIndex];
 
+
+		transform.forward = direction;
+		Stop();
+		Animator.Attack ();
 	}
 
 	public void OnNetworkFireSkillWithHuman(int skillIndex, Human human)
 	{
 		currentSkill = totalSkill [skillIndex];
-		currentSkill.CastHuman (human);
-		nextSkill = new SkillCastStructure ();
-		nextSkill.skillBase = totalSkill[skillIndex];
-		nextSkill.human = clickedHuman;
+
+		readyModel = new SkillReadyModel ();
+		readyModel.skillBase = totalSkill[skillIndex];
+		readyModel.human = human;
+
+
+		human.FaceTo(human.transform.position);
+		human.Stop();
+		human.Animator.Attack ();
+
+
+//		currentSkill.CastHuman (human);
 	}
 
 	public void OnNetworkFireSkillWithPoint(int skillIndex, Vector3 point)
 	{
+
+
+		Animator.Attack ();
+
 		currentSkill = totalSkill [skillIndex];
-		currentSkill.CastPoint (point);
-		nextSkill = new SkillCastStructure ();
-		nextSkill.skillBase = totalSkill[skillIndex];
-		nextSkill.human = clickedHuman;
+//		currentSkill.CastPoint (point);
+		readyModel = new SkillReadyModel ();
+		readyModel.skillBase = totalSkill[skillIndex];
+		readyModel.point = point;
+
+		Stop();
+		FaceTo(point);
+		XLogger.Log ("Net fire point : " + point.ToString ());
 	}
 
 	public virtual void SinglePlayerUpdate()
 	{
 		if (isMine && hangTime <= 0) {
 			var point = GetMousePoint();
+			var instanceID = this.netId.Value;
+
 			for (int i = 0; i < totalSkill.Count; i++) {
 				if (Input.GetKeyUp (totalSkill [i].keyCode) && totalSkill [i].CanRelease() ) {
 
 					currentSkill = totalSkill [i];
-					currentSkill.CastDirection (transform.forward);
-
+					currentSkillIndex = i;
 					if (currentSkill.caseType == CastType.Immatie) {
-						nextSkill = new SkillCastStructure ();
-						nextSkill.skillBase = currentSkill;
+						NetworkListener.Instance.CmdCastSkillWithDirection(instanceID, currentSkillIndex, transform.forward);
 					}
 					else{
-						nextSkill = null;
+						readyModel = null;
 						InputManager.Instance.SetSelected ();
 					}
 				}
@@ -193,16 +212,18 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			if (Input.GetButtonUp("Fire1")) {
 
 				if (currentSkill != null) {
-					if (currentSkill.caseType == CastType.Point) {
-						currentSkill.CastPoint (point);
-						nextSkill = new SkillCastStructure ();
-						nextSkill.skillBase = currentSkill;
-						nextSkill.point = point;
+					if (currentSkill.caseType == CastType.Point && point != Vector3.zero) {
+						
+						currentSkill.CastPoint (currentSkillIndex, point);
+//						readyModel = new SkillReadyModel ();
+//						readyModel.skillBase = currentSkill;
+//						nextSkill.point = point;
 					} else if (currentSkill.caseType == CastType.Target && clickedHuman != null && currentSkill.CanReleaseAtHuman (clickedHuman)) {
-						currentSkill.CastHuman (clickedHuman);
-						nextSkill = new SkillCastStructure ();
-						nextSkill.human = clickedHuman;
-						nextSkill.skillBase = currentSkill;
+						
+						currentSkill.CastHuman (currentSkillIndex, clickedHuman);
+//						nextSkill = new SkillCastStructure ();
+//						nextSkill.human = clickedHuman;
+//						nextSkill.skillBase = currentSkill;
 					}
 					InputManager.Instance.SetUnSelected ();
 				} 
@@ -221,8 +242,10 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 				StopForIdle ();
 			}
 		}
-		if (followTarget != null)
-			CmdMoveTo (followTarget.transform.position);
+		if (followTarget != null) {
+			var p = MathUtils.NearlyPoint (transform.position, followTarget.transform.position, 10);
+			CmdMoveTo (p);
+		}
 		for (int i = 0; i < totalSkill.Count; i++) {
 			totalSkill [i].UpdateCoolCD ();
 		}
@@ -241,9 +264,15 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 
 		OnUpdate ();
 	}
+	private Vector3 lastMovePoint = Vector3.zero;
 	public void CmdMoveTo(Vector3 point)
 	{
-		NetworkListener.Instance.CmdMoveTo (this.netId.Value, point);
+		var d = Vector3.Distance (point, lastMovePoint);
+		if (d > 0.5f) {
+			lastMovePoint = point;
+
+			NetworkListener.Instance.CmdMoveTo (this.netId.Value, point);
+		}
 	}
 	public void MoveTo(Vector3 point)
 	{
@@ -263,7 +292,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	public void StopForIdle()
 	{
 		CancelFollow ();
-		FinishSkill ();
+		CleanSkill ();
 		CancleHoldOnSkill ();
 		Stop ();
 	}
@@ -275,7 +304,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			holdOnSkill.OnSkillEnd ();
 
 			currentSkill = null;
-			nextSkill = null;
+			readyModel = null;
 			holdOnSkill = null;
 		}
 	}
@@ -296,7 +325,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	public bool isHangs = false;
 	public virtual void Hangs(float time){
 		hangTime += time;
-		if (hangTime > 0) {
+		if (!isHangs) {
 			StopForIdle ();
 			isHangs = true;
 			Animator.Die ();
@@ -347,15 +376,15 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		}
 		return Vector3.zero;
 	}
-	public void FinishSkill()
+	public void CleanSkill()
 	{
 		
 		if (currentSkill != null) {
 			currentSkill.PrepareCancel ();
 			InputManager.Instance.SetUnSelected ();
-
+			currentSkill = null;
 		}
-		nextSkill = null;
+		readyModel = null;
 	}
 	public Action OnDestroyAction = null;
 	void DestroyMyself()
@@ -403,19 +432,20 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	{
 		followTarget = null;
 	}
-	public void CastSkill()
+	public void EmitSkill()
 	{
-		if (nextSkill != null) {
-			var newSkill = nextSkill.skillBase.CreatePrefab(transform,nextSkill.skillBase.gameObject).GetComponent<SkillBase>();
-			nextSkill.skillBase.Cooling ();
+		if (readyModel != null) {
+			var newSkill = readyModel.skillBase.CreatePrefab(transform,readyModel.skillBase.gameObject).GetComponent<SkillBase>();
+			readyModel.skillBase.Cooling ();
 
 			newSkill.gameObject.tag = TeamTag;
 			newSkill.transform.parent = null;
 			newSkill.isCacheSkill = false;
 			newSkill.gameObject.SetActive (true);
-			newSkill.targetHuman = nextSkill.human;
-			newSkill.castPoint = nextSkill.point;
-			FinishSkill ();
+			newSkill.targetHuman = readyModel.human;
+			newSkill.castPoint = readyModel.point;
+			currentSkill = newSkill;
+			CleanSkill ();
 		}
 	}
 	private HighlighterConstant highlighterConstant = null;
@@ -497,4 +527,9 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	transform.position = point;
 	}
 	#endif
+
+	public virtual void OnDestroy ()
+	{
+
+	}
 }

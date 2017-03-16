@@ -208,7 +208,7 @@ public class AnimationCtr : XMonoBehaviour {
 		EnableAnimationBool (animPara);
 	}
 	[X]
-	public void AttackNormal()
+	public void Attack()
 	{
 		int animPara = 0;
 
@@ -352,7 +352,7 @@ public class AnimationCtr : XMonoBehaviour {
 
 	public void TriggerSkill()
 	{
-		human.CastSkill ();
+		human.EmitSkill ();
 	}
 
 	public void BindSkill()

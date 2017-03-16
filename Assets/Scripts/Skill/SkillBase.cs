@@ -65,7 +65,7 @@ public class SkillBase : XMonoBehaviour {
 		case CastType.Immatie:
 			if (CanRelease ()) {
 				human.transform.forward = direction;
-				human.Animator.AttackNormal ();
+				human.Animator.Attack ();
 			}
 			break;
 		case CastType.Point:
@@ -78,25 +78,20 @@ public class SkillBase : XMonoBehaviour {
 		}
 	}
 	[X]
-	public void CastPoint(Vector3 point)
+	public void CastPoint(int currentSkillIndex, Vector3 point)
 	{
 		if (CanReleaseAtPos (point)) {
 			castPoint = point;
-			CreateCastRangeCollider (point);
+			CreateCastRangeCollider (currentSkillIndex, point);
 
 		}
 
 	}
 	[X]
-	public virtual void CastHuman(Human other)
+	public virtual void CastHuman(int currentSkillIndex, Human other)
 	{
-
 		targetHuman = other;
-		CreateCastHuman (other);
-
-			
-		
-
+		CreateCastHuman (currentSkillIndex, other);
 	}
 	public void PrepareCancel()
 	{
@@ -106,7 +101,7 @@ public class SkillBase : XMonoBehaviour {
 		}
 	}
 
-	public void CreateCastHuman(Human other)
+	public void CreateCastHuman(int currentSkillIndex, Human other)
 	{
 		human.Follow (other);
 		if (castCollider == null) {
@@ -119,33 +114,33 @@ public class SkillBase : XMonoBehaviour {
 			skillCollider.human = human;
 			skillCollider.targetHuman = other;
 			skillCollider.onCollisionStay = () => {
-				human.FaceTo(other.transform.position);
-				human.Stop();
-				human.Animator.AttackNormal ();
+
+				NetworkListener.Instance.CmdCastSkillWithTarget (human.netId.Value, currentSkillIndex, other.netId.Value);
 				DestroyGameObject(castCollider, 0.0f);
 				castCollider = null;
+				skillCollider.onCollisionStay = null;
 			};
 		}
 	}
 
-	public void CreateCastRangeCollider(Vector3 point)
+	public void CreateCastRangeCollider(int currentSkillIndex, Vector3 point)
 	{
-		human.CmdMoveTo (point);
+//		human.CmdMoveTo (point);
+		var p = MathUtils.NearlyPoint(human.transform.position, point, castRange - 1);
+		human.CmdMoveTo (p);
 		if (castCollider == null) {
 			castCollider = new GameObject ("SkillCastRanger");
 			var sphere = castCollider.AddComponent<SphereCollider> ();
-			castCollider.transform.position = point;
+			castCollider.transform.position = p;
 			sphere.radius = castRange;
 			sphere.isTrigger = true;
 			var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
 			skillCollider.human = human;
 			skillCollider.onCollisionStay = () => {
-				
-				human.Stop();
-				human.FaceTo(point);
-				human.Animator.AttackNormal ();
+				NetworkListener.Instance.CmdCastSkillWithPoint (human.netId.Value, currentSkillIndex, point);
 				DestroyGameObject(castCollider, 0.0f);
 				castCollider = null;
+				skillCollider.onCollisionStay = null;
 			};
 		}
 	}

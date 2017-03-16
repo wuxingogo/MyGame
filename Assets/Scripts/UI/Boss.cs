@@ -8,26 +8,28 @@ using wuxingogo.Runtime;
 
 public class Boss : Human {
 
-
 	public List<Player> totalEnemies = new List<Player>();
 
 	public FireBall fireballSkill =null;
+	public int skillIndex = 0;
 	public float attackDistance = 10f;
 	public bool isCloseToEnemy = false;
 	public NetworkIdentity identity = null;
+	public float skillWaitingTime = 1f;
 
 	public override void OnInit ()
 	{
 		base.OnInit ();
 
-		totalEnemies = FindObjectsOfType<Player> ().ToList();
+		//totalEnemies = FindObjectsOfType<Player> ().ToList();
 
 		for (int i = 0; i < totalSkill.Count; i++) {
 			var skill = totalSkill [i];
 			if (skill is FireBall) {
 				fireballSkill = skill as FireBall;
-				nextSkill = new SkillCastStructure ();
-				nextSkill.skillBase = fireballSkill;
+				skillIndex = i;
+//				nextSkill = new SkillCastStructure ();
+//				nextSkill.skillBase = fireballSkill;
 			}
 		}
 		identity = GetComponent<NetworkIdentity> ();
@@ -35,14 +37,15 @@ public class Boss : Human {
 
 	public void CloseToEnemy(Human human)
 	{
-		if (!isCloseToEnemy) {
-			isCloseToEnemy = true;
-			var p1 = transform.position;
-			var p2 = human.transform.position;
-			var v = p2 - p1;
-			Vector3 p = (v.normalized) * attackDistance + transform.position;
+//		if (!isCloseToEnemy) {
+//			isCloseToEnemy = true;
+//			var p1 = transform.position;
+//			var p2 = human.transform.position;
+
+			var p = MathUtils.NearlyPoint(transform.position, human.transform.position, attackDistance - 2);
+//			Vector3 p = (v.normalized) * attackDistance + transform.position;
 			CmdMoveTo (p);
-		}
+//		}
 	}
 	public override void OnHangsEnded ()
 	{
@@ -58,7 +61,7 @@ public class Boss : Human {
 
 	public override void SinglePlayerUpdate()
 	{
-		base.SinglePlayerUpdate ();
+		
 		var enemy = FindClosestEnemy ();
 
 		if (enemy == null || isHangs)
@@ -68,19 +71,22 @@ public class Boss : Human {
 		var distance = offset.magnitude;
 		var direction = offset.normalized;
 
-		if (distance < attackDistance) {
-			
+		if (distance < attackDistance && fireballSkill.CanRelease() && skillWaitingTime > 1) {
+			skillWaitingTime = 0f;
 			currentSkill = fireballSkill;
-			fireballSkill.CastDirection (direction);
-			nextSkill = new SkillCastStructure ();
-			nextSkill.skillBase = fireballSkill;
-		} else {
+			NetworkListener.Instance.CmdCastSkillWithDirection (this.netId.Value, skillIndex, direction);
+//			fireballSkill.CastDirection (direction);
+//			nextSkill = new SkillCastStructure ();
+//			nextSkill.skillBase = fireballSkill;
+		} else if(distance > attackDistance){
 			CloseToEnemy (enemy);
 		}
+		skillWaitingTime += Time.deltaTime;
 	}
 
 	void Update()
 	{
+		base.SinglePlayerUpdate ();
 		if (!isServer) {
 			return;
 		}
@@ -97,6 +103,7 @@ public class Boss : Human {
 	{
 		Player result = null;
 		float distance = 999999;
+		totalEnemies = Player.allPlayer;
 		for (int i = 0; i < totalEnemies.Count; i++) {
 			if (totalEnemies [i].isDead)
 				continue;

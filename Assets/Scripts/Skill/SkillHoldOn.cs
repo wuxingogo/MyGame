@@ -24,4 +24,9 @@ public class SkillHoldOn : SkillBase {
 		}
 		Destroy (gameObject);
 	}
+
+	public void ImmediatelyFinish()
+	{
+		holdOnTime = 0;
+	}
 }

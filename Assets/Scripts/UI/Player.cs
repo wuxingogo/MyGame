@@ -28,15 +28,38 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityStandardAssets.Utility;
 using wuxingogo.Runtime;
+using System.Collections.Generic;
 
 
 
 public class Player : Human
 {
-	
+	public static List<Player> allPlayer = new List<Player>();
+
+	public override void OnEnable()
+	{
+		base.OnEnable ();
+		if(!allPlayer.Contains(this))
+			allPlayer.Add (this);
+	}
+
+	public override void OnDisable()
+	{
+		base.OnDisable ();
+		if(allPlayer.Contains(this))
+			allPlayer.Remove (this);
+	}
+	public override void OnDestroy ()
+	{
+		base.OnDestroy ();
+		if(allPlayer.Contains(this))
+			allPlayer.Remove (this);
+	}
+
 	public override void OnInit ()
 	{
 		
+
 		var listeners = FindObjectsOfType<NetworkListener> ();
 		if (NetworkListener.Instance == null) {
 			isMine = false;

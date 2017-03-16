@@ -27,7 +27,7 @@ public class MedicalFog : SkillHoldOn {
 			count -= 1;
 			CreateEffect ();
 		} else if(count == 0){
-			holdOnTime = 0;
+			ImmediatelyFinish ();
 
 		}
 	}

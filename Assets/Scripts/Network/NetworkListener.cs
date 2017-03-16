@@ -120,13 +120,10 @@ public class NetworkListener : NetworkBehaviour {
 	}
 	#endif
 
-	#if UNITY_NETWORK
 	[Command]
 	public void CmdMoveTo(uint controlID, Vector3 point)
 	{
-
-		if (isServer) 
-			RpcMoveTo (controlID, point);
+		RpcMoveTo (controlID, point);
 
 	}
 	[ClientRpc]
@@ -164,7 +161,7 @@ public class NetworkListener : NetworkBehaviour {
 	[Command]
 	public void CmdMove(uint controlID, Vector3 energy)
 	{
-		if (isServer)
+//		if (isServer)
 			RpcMove (controlID, energy);
 	}
 	[ClientRpc]
@@ -190,38 +187,38 @@ public class NetworkListener : NetworkBehaviour {
 	}
 
 	[Command]
-	public void CmdCastSkillWithDirection(uint controlID, uint skillIndex, Vector3 forward)
+	public void CmdCastSkillWithDirection(uint controlID, int skillIndex, Vector3 forward)
 	{
 		if (isServer)
 			RpcCastSkillWithDirection (controlID, skillIndex, forward);
 	}
 	[ClientRpc]
-	public void RpcCastSkillWithDirection(uint controlID, uint skillIndex, Vector3 forward)
+	public void RpcCastSkillWithDirection(uint controlID, int skillIndex, Vector3 forward)
 	{
 		var human = FindLocalObjectComponent<Human>(controlID);
 		human.OnNetworkFireSkillWithDirection (skillIndex, forward);
 	}
 	[Command]
-	public void CmdCastSkillWithTarget(uint controlID, uint skillIndex, uint targetID)
+	public void CmdCastSkillWithTarget(uint controlID, int skillIndex, uint targetID)
 	{
 		if (isServer)
 			RpcCastSkillWithTarget (controlID, skillIndex, targetID);
 	}
 	[ClientRpc]
-	public void RpcCastSkillWithTarget(uint controlID, uint skillIndex, uint targetID)
+	public void RpcCastSkillWithTarget(uint controlID, int skillIndex, uint targetID)
 	{
 		var human = FindLocalObjectComponent<Human>(controlID);
 		var target = FindLocalObjectComponent<Human>(targetID);
 		human.OnNetworkFireSkillWithHuman (skillIndex, target);
 	}
 	[Command]
-	public void CmdCastSkillWithPoint(uint controlID, uint skillIndex, Vector3 point)
+	public void CmdCastSkillWithPoint(uint controlID, int skillIndex, Vector3 point)
 	{
 		if (isServer)
-			RpcCastSkillWithTarget (controlID, skillIndex, point);
+			RpcCastSkillWithPoint (controlID, skillIndex, point);
 	}
 	[ClientRpc]
-	public void RpcCastSkillWithPoint(uint controlID, uint skillIndex, Vector3 point)
+	public void RpcCastSkillWithPoint(uint controlID, int skillIndex, Vector3 point)
 	{
 		var human = FindLocalObjectComponent<Human>(controlID);
 		human.OnNetworkFireSkillWithPoint (skillIndex, point);
@@ -235,65 +232,6 @@ public class NetworkListener : NetworkBehaviour {
 	{
 		return FindLocalObject(controlID).GetComponent<T>();
 	}
-
-	#else
-	public void CmdMoveTo(Vector3 point)
-	{
-	if (!isDead && !isHangs) {
-	facade.MoveTo (point, false);
-	goalPoint = point;
-	}
-	}
-	#endif
-//	#if UNITY_NETWORK
-//	[X]
-//	[Command]
-//	public void CmdSynchronizePoint(Vector3 point)
-//	{
-//
-//		if (isServer) 
-//			RpcSynchronizePoint (point);
-//
-//	}
-//	[X]
-//	[ClientRpc]
-//	public void RpcSynchronizePoint(Vector3 point){
-//		transform.position = point;
-//	}
-//	#else
-//	public void CmdSynchronizePoint(Vector3 point)
-//	{
-//	transform.position = point;
-//	}
-//	#endif
-
-	/*
-	#if UNITY_NETWORK
-	[Command]
-	public void CmdMoveTo(Vector3 point)
-	{
-
-		if (isServer) 
-			RpcMoveTo (point);
-
-	}
-	[ClientRpc]
-	public void RpcMoveTo(Vector3 point){
-		if (!isDead && !isHangs) {
-			facade.MoveTo (point, false);
-			goalPoint = point;
-		}
-	}
-	#else
-	public void CmdMoveTo(Vector3 point)
-	{
-	if (!isDead && !isHangs) {
-	facade.MoveTo (point, false);
-	goalPoint = point;
-	}
-	}
-	#endif
-	*/
 
 	void OnDestroy ()
 	{

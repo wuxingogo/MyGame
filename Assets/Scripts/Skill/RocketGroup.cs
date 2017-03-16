@@ -11,7 +11,7 @@ public class RocketGroup : SkillHoldOn {
 	public GameObject explosion = null;
 	public UnityExtendCurveTemplate template = null;
 	public float range = 0;
-
+	public float hangTime = 1f;
 	void Start()
 	{
 		OnSkillBegin ();
@@ -28,7 +28,7 @@ public class RocketGroup : SkillHoldOn {
 			count -= 1;
 			CreateEffect ();
 		} else if(count == 0){
-			holdOnTime = 0;
+			ImmediatelyFinish ();
 
 		}
 	}
@@ -48,7 +48,17 @@ public class RocketGroup : SkillHoldOn {
 		c.OnHitEvent += () => {
 			var e = GameObjectUtil.CreatePrefab(null, explosion);
 			e.transform.position = pos;
-
+			var boxCollider = e.AddComponent<BoxCollider>();
+			boxCollider.isTrigger = true;
+			boxCollider.size = Vector3.one * 3;
+			var collider = e.AddComponent<SkillColliderMessager>();
+			collider.onCollisionEnter += (m, t)=> {
+				var human = t.GetComponent<Human>();
+				if(human != null)
+				{
+					human.Hangs(hangTime);
+				}
+			};
 			Destroy(e, 5);
 			Destroy(v, 5);
 		};
