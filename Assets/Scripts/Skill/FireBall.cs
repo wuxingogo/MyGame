@@ -37,7 +37,6 @@ public class FireBall : SkillBase {
 
 				DestroyGameObject (go, 5);
 			}
-//			XLogger.Log ("OnBallCollision");
 		}
 	}
 

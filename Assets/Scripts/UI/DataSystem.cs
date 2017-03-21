@@ -50,6 +50,17 @@ public class DataSystem : XMonoBehaviour
 
 	}
 
+	void OnEnable()
+	{
+		if (hpSlider != null)
+			hpSlider.gameObject.SetActive (true);
+	}
+	void OnDisable()
+	{
+		if (hpSlider != null)
+			hpSlider.gameObject.SetActive (false);
+	}
+
 	[X]
 	public void Damage(float damage)
 	{

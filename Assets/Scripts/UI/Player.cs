@@ -34,26 +34,24 @@ using System.Collections.Generic;
 
 public class Player : Human
 {
-	public static List<Player> allPlayer = new List<Player>();
+	public static Player[] allPlayer{
+		get{
+			return FindObjectsOfType<Player> ();
+		}
+	}
 
 	public override void OnEnable()
 	{
 		base.OnEnable ();
-		if(!allPlayer.Contains(this))
-			allPlayer.Add (this);
 	}
 
 	public override void OnDisable()
 	{
 		base.OnDisable ();
-		if(allPlayer.Contains(this))
-			allPlayer.Remove (this);
 	}
 	public override void OnDestroy ()
 	{
 		base.OnDestroy ();
-		if(allPlayer.Contains(this))
-			allPlayer.Remove (this);
 	}
 
 	public override void OnInit ()

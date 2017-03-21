@@ -360,15 +360,15 @@ public class AnimationCtr : XMonoBehaviour {
 		RuntimeAnimatorController rac = _animator.runtimeAnimatorController;
 		AnimationClip[] clips = rac.animationClips;
 		int clipsCount = clips.Length;
-		var count = PrototypeManager.instance.totalEvent.Count;
+		var count = PrototypeManager.instance.totalDictionary.Count;
 
 		for (int i = 0; i < clipsCount; ++i) {
 			AnimationClip c = clips[i];
 			c.events = null;
 			var clipName = c.name;
-			if (PrototypeManager.instance.totalEvent.ContainKey (clipName)) {
+			if (PrototypeManager.instance.totalDictionary.ContainKey (clipName)) {
 				XLogger.Log (clipName);
-				var time = PrototypeManager.instance.totalEvent [clipName];
+				var time = PrototypeManager.instance.totalDictionary [clipName];
 
 				AnimationEvent ae = new AnimationEvent();
 				ae.time = Mathf.Min( c.length, time );

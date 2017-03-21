@@ -29,4 +29,5 @@ public class SkillHoldOn : SkillBase {
 	{
 		holdOnTime = 0;
 	}
+
 }

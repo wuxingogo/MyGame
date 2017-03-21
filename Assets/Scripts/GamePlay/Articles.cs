@@ -21,4 +21,13 @@ public class Articles : MonoBehaviour {
 		transform.position = new Vector3 (startPosition.x, delta + startPosition.y, startPosition.z);
 		transform.Rotate (new Vector3 (0, rotateSpeed, 0));
 	}
+
+	void OnTriggerEnter (Collider other)
+	{
+		var player = other.GetComponent<Player> ();
+		if (player != null) {
+			var t = GameObjectUtil.GetRootParent (transform);
+			Destroy (t.gameObject);
+		}
+	}
 }

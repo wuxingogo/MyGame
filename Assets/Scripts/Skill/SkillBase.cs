@@ -34,6 +34,7 @@ public class SkillBase : XMonoBehaviour {
 	private float coolingTime = 0f;
 	public float holdOnTime = 0f;
 	public bool isCacheSkill = false;
+	public AnimationType animationType = AnimationType.Attack_Normal;
 	public bool InCD {
 		get{
 			return coolingTime < CDTime;
@@ -65,7 +66,6 @@ public class SkillBase : XMonoBehaviour {
 		case CastType.Immatie:
 			if (CanRelease ()) {
 				human.transform.forward = direction;
-				human.Animator.Attack ();
 			}
 			break;
 		case CastType.Point:
@@ -83,9 +83,7 @@ public class SkillBase : XMonoBehaviour {
 		if (CanReleaseAtPos (point)) {
 			castPoint = point;
 			CreateCastRangeCollider (currentSkillIndex, point);
-
 		}
-
 	}
 	[X]
 	public virtual void CastHuman(int currentSkillIndex, Human other)
@@ -125,7 +123,6 @@ public class SkillBase : XMonoBehaviour {
 
 	public void CreateCastRangeCollider(int currentSkillIndex, Vector3 point)
 	{
-//		human.CmdMoveTo (point);
 		var p = MathUtils.NearlyPoint(human.transform.position, point, castRange - 1);
 		human.CmdMoveTo (p);
 		if (castCollider == null) {

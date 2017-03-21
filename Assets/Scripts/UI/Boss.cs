@@ -10,42 +10,35 @@ public class Boss : Human {
 
 	public List<Player> totalEnemies = new List<Player>();
 
-	public FireBall fireballSkill =null;
-	public int skillIndex = 0;
+
 	public float attackDistance = 10f;
 	public bool isCloseToEnemy = false;
 	public NetworkIdentity identity = null;
 	public float skillWaitingTime = 1f;
 
+	public FireBall fireballSkill =null;
+	public int fireBallIndex = 0;
+	public SunStrike sunStrikeSkill = null;
+	public int sunStrikeIndex = 1;
+
+	public int skillIndex = 0;
+	public int[] skillExcuteOrder = new int[]{
+		0,1,1,0,0,0,1,0,1
+	};
 	public override void OnInit ()
 	{
 		base.OnInit ();
 
-		//totalEnemies = FindObjectsOfType<Player> ().ToList();
-
-		for (int i = 0; i < totalSkill.Count; i++) {
-			var skill = totalSkill [i];
-			if (skill is FireBall) {
-				fireballSkill = skill as FireBall;
-				skillIndex = i;
-//				nextSkill = new SkillCastStructure ();
-//				nextSkill.skillBase = fireballSkill;
-			}
-		}
 		identity = GetComponent<NetworkIdentity> ();
 	}
 
 	public void CloseToEnemy(Human human)
 	{
-//		if (!isCloseToEnemy) {
-//			isCloseToEnemy = true;
-//			var p1 = transform.position;
-//			var p2 = human.transform.position;
 
-			var p = MathUtils.NearlyPoint(transform.position, human.transform.position, attackDistance - 2);
-//			Vector3 p = (v.normalized) * attackDistance + transform.position;
-			CmdMoveTo (p);
-//		}
+		var p = MathUtils.NearlyPoint(transform.position, human.transform.position, attackDistance - 2);
+
+		CmdMoveTo (p);
+
 	}
 	public override void OnHangsEnded ()
 	{
@@ -59,6 +52,20 @@ public class Boss : Human {
 		isCloseToEnemy = false;
 	}
 
+	public void ExcuteSkill(int index, Human closetEnemy)
+	{
+		index = skillExcuteOrder [index];
+		var skill = totalSkill [index];
+		currentSkill = skill;
+		if (skill.caseType == CastType.Immatie && skill.CanRelease()) {
+			var direction = closetEnemy.transform.position - transform.position;
+			NetworkListener.Instance.CmdCastSkillWithDirection (this.netId.Value, index, direction);
+
+			skillIndex = (skillIndex == skillExcuteOrder.Length -1) ? 0: skillIndex+1;
+		}
+	
+	}
+
 	public override void SinglePlayerUpdate()
 	{
 		
@@ -69,15 +76,11 @@ public class Boss : Human {
 
 		var offset = enemy.transform.position - transform.position;
 		var distance = offset.magnitude;
-		var direction = offset.normalized;
 
-		if (distance < attackDistance && fireballSkill.CanRelease() && skillWaitingTime > 1) {
+
+		if (distance < attackDistance && skillWaitingTime > 1) {
 			skillWaitingTime = 0f;
-			currentSkill = fireballSkill;
-			NetworkListener.Instance.CmdCastSkillWithDirection (this.netId.Value, skillIndex, direction);
-//			fireballSkill.CastDirection (direction);
-//			nextSkill = new SkillCastStructure ();
-//			nextSkill.skillBase = fireballSkill;
+			ExcuteSkill (skillIndex, enemy);
 		} else if(distance > attackDistance){
 			CloseToEnemy (enemy);
 		}
@@ -103,7 +106,7 @@ public class Boss : Human {
 	{
 		Player result = null;
 		float distance = 999999;
-		totalEnemies = Player.allPlayer;
+		totalEnemies = Player.allPlayer.ToList();
 		for (int i = 0; i < totalEnemies.Count; i++) {
 			if (totalEnemies [i].isDead)
 				continue;

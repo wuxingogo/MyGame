@@ -151,7 +151,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 
 		transform.forward = direction;
 		Stop();
-		Animator.Attack ();
+		DoAttackAnimation (currentSkill);
 	}
 
 	public void OnNetworkFireSkillWithHuman(int skillIndex, Human human)
@@ -163,9 +163,9 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		readyModel.human = human;
 
 
-		human.FaceTo(human.transform.position);
-		human.Stop();
-		human.Animator.Attack ();
+		FaceTo(human.transform.position);
+		Stop();
+		DoAttackAnimation (currentSkill);
 
 
 //		currentSkill.CastHuman (human);
@@ -175,7 +175,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	{
 
 
-		Animator.Attack ();
+
 
 		currentSkill = totalSkill [skillIndex];
 //		currentSkill.CastPoint (point);
@@ -183,9 +183,19 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		readyModel.skillBase = totalSkill[skillIndex];
 		readyModel.point = point;
 
+		DoAttackAnimation (currentSkill);
 		Stop();
 		FaceTo(point);
 		XLogger.Log ("Net fire point : " + point.ToString ());
+	}
+
+	void DoAttackAnimation(SkillBase skillBase)
+	{
+		if (skillBase.animationType == AnimationType.Attack_Normal) {
+			Animator.Attack ();
+		} else {
+			Animator.Play (skillBase.animationType);
+		}
 	}
 
 	public virtual void SinglePlayerUpdate()
@@ -210,7 +220,9 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			}
 
 			if (Input.GetButtonUp("Fire1")) {
-
+				CancelFollow ();
+				CancleHoldOnSkill ();
+				Stop ();
 				if (currentSkill != null) {
 					if (currentSkill.caseType == CastType.Point && point != Vector3.zero) {
 						
@@ -228,8 +240,11 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 					InputManager.Instance.SetUnSelected ();
 				} 
 			} else if(Input.GetButtonUp ("Fire2")){
+				
 				CancelFollow ();
+				CleanSkill ();
 				CancleHoldOnSkill ();
+
 				if (clickedHuman != null && clickedHuman != this) {
 					Follow (clickedHuman);
 					clickedHuman = null;
@@ -258,13 +273,14 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			}
 		}
 
-		if (currentSkill != null && !currentSkill.isCacheSkill && currentSkill.holdOnTime <= 0) {
+		if (holdOnSkill != null && holdOnSkill.holdOnTime <= 0) {
 			CancleHoldOnSkill ();
 		}
 
 		OnUpdate ();
 	}
 	private Vector3 lastMovePoint = Vector3.zero;
+	[X]
 	public void CmdMoveTo(Vector3 point)
 	{
 		var d = Vector3.Distance (point, lastMovePoint);
@@ -274,6 +290,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			NetworkListener.Instance.CmdMoveTo (this.netId.Value, point);
 		}
 	}
+	[X]
 	public void MoveTo(Vector3 point)
 	{
 		if (!isDead && !isHangs) {
@@ -296,6 +313,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		CancleHoldOnSkill ();
 		Stop ();
 	}
+
 
 	public void CancleHoldOnSkill()
 	{
@@ -331,6 +349,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			Animator.Die ();
 		}
 	}
+	[X]
 	public virtual void OnHangsEnded()
 	{
 		facade.Resume ();
@@ -401,7 +420,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		for (int i = 0; i < totalSkill.Count; i++) {
 			var currentSkill = totalSkill [i];
 
-			var go = Instantiate (currentSkill.gameObject);
+			var go = GameObjectUtil.CreatePrefab (transform, currentSkill.gameObject, false);
 			go.tag = TeamTag;
 			currentSkill = go.GetComponent<SkillBase>();
 			currentSkill.human = this;

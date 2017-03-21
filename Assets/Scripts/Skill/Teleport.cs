@@ -10,7 +10,7 @@ public class Teleport : SkillBase {
 		teleportStart = CreatePrefab(teleportStart);
 		teleportStart.SetActive (true);
 		teleportStart.transform.position = human.transform.position;
-		human.transform.position = castPoint + new Vector3(0, 2.5f);
+		human.transform.position = castPoint;
 		DestroyGameObject (teleportStart, 3.0f);
 
 		teleportStart = CreatePrefab(teleportStart);

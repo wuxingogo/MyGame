@@ -104,4 +104,6 @@ public enum AnimationType {
 	TH_Sword_Take_Damage = 99,
 	TH_Sword_Relax = 100,
 	TH_Sword_Die = 101,
+
+	Attack_Normal = 9999,
 }
