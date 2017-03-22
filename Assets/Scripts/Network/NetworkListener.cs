@@ -11,6 +11,7 @@ public class NetworkListener : NetworkBehaviour {
 	public static NetworkListener Instance = null;
 	public GameObject playerPrefab = null;
 	public GameObject bossPrefab = null;
+	public GameObject sceneBossGameObject = null;
 
 	public List<GameObject> allGameObject = new List<GameObject>();
 	public static int allTeamID = 0;
@@ -26,12 +27,45 @@ public class NetworkListener : NetworkBehaviour {
 			CmdSpawnPlayer(this.teamID, transform.position);
 		}
 
-		if(isServer && isLocalPlayer)
-			CmdSpawnBoss (new Vector3 (-338.6f, 3, -623.6f));
+		ServerBornListener ();
 		//ServerSpawnPlayer(transform.position);
+	}
+	[X]
+	public bool isStart = false;
+	public int bossCount = 0;
+	[Server]
+	public void ServerBornListener()
+	{
+		if(!isStart){
+			if (NetworkServer.connections.Count >= 2) {
+				isStart = true;
+				SpwanBoss ();
+			}
+		}
 	}
 
 	#if UNITY_NETWORK
+
+	[X]
+	public void SpwanBoss()
+	{
+		ServerSpawnBoss (new Vector3 (-338.6f, 3, -623.6f));
+		bossCount++;
+
+		RpcBornBoss (bossCount);
+	}
+	[ClientRpc]
+	void RpcBornBoss(int bossCount)
+	{
+		var t = Resources.Load<GameObject>("UI/3DTitle");
+		t = Instantiate (t);
+		var mainPanel = UIManager.Instance.transform.Find ("MainPanel");
+		t.transform.SetParent (mainPanel);
+		string s = string.Format ("Round {0}", bossCount);
+		t.GetComponent<TMPro.TextMeshPro> ().text = s;
+
+		Destroy (t, 10);
+	}
 
 
 	public void OnStartClient()
@@ -65,24 +99,45 @@ public class NetworkListener : NetworkBehaviour {
 		player.teamID = teamID;
 		player.isNetInit = true;
 	}
-
+	[X]
+	public static NetworkInstanceId GetNetworkInstanceID(GameObject go)
+	{
+		return go.GetComponent<NetworkBehaviour> ().netId;
+	}
 
 	[X]
-	[Command]
-	public void CmdSpawnBoss(Vector3 point){
-		if (isServer)
-			RpcSpawnBoss (point);
+	[Server]
+	public void ServerSpawnBoss(Vector3 point){
+		if (isServer) {
+			if (sceneBossGameObject != null) {
+				NetworkServer.Destroy(sceneBossGameObject);
+				sceneBossGameObject = null;
+			}
+
+			sceneBossGameObject = (GameObject)Instantiate (bossPrefab, point, transform.rotation);
+			NetworkServer.Spawn (sceneBossGameObject);
+
+			var boss = sceneBossGameObject.GetComponent<Boss> ();
+			boss.isMine = false;
+			allGameObject.Add (bossPrefab);
+		}
+	}
+	
+	[ClientRpc]
+	public void RpcDestroyObject(uint controlID)
+	{
+		var go = FindLocalObject (controlID);
+		Destroy (go);
 	}
 	[ClientRpc]
 	public void RpcSpawnBoss(Vector3 point){
-//		if (!isServer) {
-			var prefab = (GameObject)Instantiate (bossPrefab, point, transform.rotation);
-			NetworkServer.Spawn (prefab);
+		
+		sceneBossGameObject = (GameObject)Instantiate (bossPrefab, point, transform.rotation);
+		NetworkServer.Spawn (sceneBossGameObject);
 
-			var boss = prefab.GetComponent<Boss> ();
-			boss.isMine = false;
-			allGameObject.Add (bossPrefab);
-//		}
+		var boss = sceneBossGameObject.GetComponent<Boss> ();
+		boss.isMine = false;
+		allGameObject.Add (bossPrefab);
 	}
 
 	[X]
@@ -246,7 +301,7 @@ public class NetworkListener : NetworkBehaviour {
 	void OnGUI()
 	{
 		if (isLocalPlayer) {
-			var dict = NetworkServer.objects;
+			var dict = ClientScene.objects;
 			int i = 0;
 			foreach (var item in dict) {
 				
