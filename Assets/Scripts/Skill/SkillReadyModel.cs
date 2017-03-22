@@ -26,14 +26,10 @@
 using UnityEngine;
 using System.Collections;
 
-public class SkillCastStructure
+public class SkillReadyModel
 {
 	public Vector3 point = Vector3.zero;
 	public Human human = null;
 	public SkillBase skillBase = null;
-
-	public void CancelSkill()
-	{
-	}
 }
 
