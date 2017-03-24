@@ -57,7 +57,7 @@ public class AnimationCtr : XMonoBehaviour {
 
 	private Animator _animator = null;
 	public WeaponType weaponType = WeaponType.NONE;
-
+	public bool isIdle = false;
 	public Human human = null;
 	void Start()
 	{
@@ -112,6 +112,8 @@ public class AnimationCtr : XMonoBehaviour {
 		if (idlePara != 0) {
 			_animator.SetBool (idlePara, true);
 		}
+		isIdle = true;
+
 	}
 	public void CancelIdle()
 	{
@@ -156,7 +158,6 @@ public class AnimationCtr : XMonoBehaviour {
 			Idle ();
 		}
 	}
-
 	[X]
 	public void Walk()
 	{
@@ -181,6 +182,7 @@ public class AnimationCtr : XMonoBehaviour {
 			break;
 		}
 		EnableAnimationBool (animPara);
+		isIdle = false;
 	}
 	[X]
 	public void Run()

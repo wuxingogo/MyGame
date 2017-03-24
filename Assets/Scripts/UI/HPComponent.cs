@@ -19,6 +19,7 @@ public class HPComponent : XMonoBehaviour {
 	{
 		RectTransform hpRect = transform as RectTransform;
 		var p = Camera.main.WorldToScreenPoint (followTarget.position);
+		p = UIManager.Instance.UICamera.WorldToScreenPoint (followTarget.position);
 		hpRect.position = p + offset;
 	}
 }

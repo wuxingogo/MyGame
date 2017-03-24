@@ -174,11 +174,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 	public void OnNetworkFireSkillWithPoint(int skillIndex, Vector3 point)
 	{
 
-
-
-
 		currentSkill = totalSkill [skillIndex];
-//		currentSkill.CastPoint (point);
 		readyModel = new SkillReadyModel ();
 		readyModel.skillBase = totalSkill[skillIndex];
 		readyModel.point = point;
@@ -288,6 +284,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 			lastMovePoint = point;
 
 			NetworkListener.Instance.CmdMoveTo (this.netId.Value, point);
+
 		}
 	}
 	[X]

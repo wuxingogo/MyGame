@@ -71,7 +71,8 @@ public class Boss : Human {
 		
 		var enemy = FindClosestEnemy ();
 
-		if (enemy == null || isHangs)
+
+		if (enemy == null || isHangs )
 			return;
 
 		var offset = enemy.transform.position - transform.position;
@@ -81,8 +82,9 @@ public class Boss : Human {
 		if (distance < attackDistance && skillWaitingTime > 1) {
 			skillWaitingTime = 0f;
 			ExcuteSkill (skillIndex, enemy);
-		} else if(distance > attackDistance){
+		} else if(distance > attackDistance ){
 			CloseToEnemy (enemy);
+			Animator.Walk ();
 		}
 		skillWaitingTime += Time.deltaTime;
 	}

@@ -30,7 +30,6 @@ using UnityEngine;
 public class AngleTest : XMonoBehaviour
 {
 	public Transform t1 = null;
-
 	public float Radius = 5;
 	public Color color = Color.red;
 	public Vector3 dir = Vector3.zero;

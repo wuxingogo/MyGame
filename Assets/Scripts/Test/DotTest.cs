@@ -8,6 +8,7 @@ public class DotTest : XMonoBehaviour {
 	// Use this for initialization
 	public Transform v1;
 	public Transform v2;
+	public Transform v3;
 	[X]
 	public Vector3 lhs{
 		get{
@@ -25,6 +26,7 @@ public class DotTest : XMonoBehaviour {
 			v2.position = value;
 		}
 	}
+
 	[X]
 	public float MDot{
 		get{
@@ -83,12 +85,38 @@ public class DotTest : XMonoBehaviour {
 		}
 	}
 
-	void Start () {
-		
+	[X]
+	public Vector3 Cross{
+		get{
+			return Vector3.Cross (lhs, rhs);
+		}
 	}
-	
-	// Update is called once per frame
-	void Update () {
-		
+	[X]
+	public bool Clockwise{
+		get{
+			var ab = v2.position - v1.position;
+			var bc = v3.position - v2.position;
+			var k = Vector3.Cross (ab, bc);
+			var cameraDir = Camera.main.transform.forward;
+			var t = Vector3.Dot (k, -cameraDir);
+			if (t > 0) {
+				return false;
+			} 
+			return true;
+		}
+	}
+	[X]
+	public bool CounterClockwise{
+		get{
+			var ac = v3.position - v1.position;
+			var cb = v2.position - v3.position;
+			var k = Vector3.Cross (ac, cb);
+			var cameraDir = Camera.main.transform.forward;
+			var t = Vector3.Dot (k, -cameraDir);
+			if (t > 0) {
+				return false;
+			} 
+			return true;
+		}
 	}
 }
