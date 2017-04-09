@@ -101,44 +101,66 @@ public class SkillBase : XMonoBehaviour {
 
 	public void CreateCastHuman(int currentSkillIndex, Human other)
 	{
-		human.Follow (other);
-		if (castCollider == null) {
-			castCollider = new GameObject ("SkillCastRanger");
-			var sphere = castCollider.AddComponent<SphereCollider> ();
-			castCollider.transform.position = other.transform.position;
-			sphere.radius = castRange;
-			sphere.isTrigger = true;
-			var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
-			skillCollider.human = human;
-			skillCollider.targetHuman = other;
-			skillCollider.onCollisionStay = () => {
+		var vec = human.transform.position - other.transform.position;
+		var distance = vec.magnitude;
+		if (distance > castRange) {
+			human.Follow (other);
+			if (castCollider == null) {
+				castCollider = new GameObject ("SkillCastRanger");
+				var sphere = castCollider.AddComponent<SphereCollider> ();
+				castCollider.transform.position = other.transform.position;
+				sphere.radius = castRange;
+				sphere.isTrigger = true;
+				var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
+				skillCollider.human = human;
+				skillCollider.targetHuman = other;
+				skillCollider.onCollisionStay = () => {
 
-				NetworkListener.Instance.CmdCastSkillWithTarget (human.netId.Value, currentSkillIndex, other.netId.Value);
-				DestroyGameObject(castCollider, 0.0f);
-				castCollider = null;
-				skillCollider.onCollisionStay = null;
-			};
+					NetworkListener.Instance.CmdCastSkillWithTarget (human.netId.Value, currentSkillIndex, other.netId.Value);
+					DestroyGameObject (castCollider, 0.0f);
+					castCollider = null;
+					skillCollider.onCollisionStay = null;
+				};
+			}
+		} else {
+			NetworkListener.Instance.CmdCastSkillWithTarget (human.netId.Value, currentSkillIndex, other.netId.Value);
+		}
+	}
+
+	public void ClearCastCollider()
+	{
+		if (castCollider != null) {
+			DestroyGameObject (castCollider, 0.0f);
 		}
 	}
 
 	public void CreateCastRangeCollider(int currentSkillIndex, Vector3 point)
 	{
-		var p = MathUtils.NearlyPoint(human.transform.position, point, castRange - 1);
-		human.CmdMoveTo (p);
-		if (castCollider == null) {
-			castCollider = new GameObject ("SkillCastRanger");
-			var sphere = castCollider.AddComponent<SphereCollider> ();
-			castCollider.transform.position = p;
-			sphere.radius = castRange;
-			sphere.isTrigger = true;
-			var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
-			skillCollider.human = human;
-			skillCollider.onCollisionStay = () => {
-				NetworkListener.Instance.CmdCastSkillWithPoint (human.netId.Value, currentSkillIndex, point);
-				DestroyGameObject(castCollider, 0.0f);
-				castCollider = null;
-				skillCollider.onCollisionStay = null;
-			};
+		var vec = human.transform.position - point;
+		var distance = vec.magnitude;
+		if (distance > castRange) {
+			var p = MathUtils.NearlyPoint (human.transform.position, point, castRange - 1);
+			human.CmdMoveTo (p);
+			XLogger.Log ("Cast Point : " + point);
+			XLogger.Log ("Move To  : " + p);
+
+			if (castCollider == null) {
+				castCollider = new GameObject ("SkillCastRanger");
+				var sphere = castCollider.AddComponent<SphereCollider> ();
+				castCollider.transform.position = point;
+				sphere.radius = castRange;
+				sphere.isTrigger = true;
+				var skillCollider = castCollider.AddComponent<SkillCasterMessager> ();
+				skillCollider.human = human;
+				skillCollider.onCollisionStay = () => {
+					NetworkListener.Instance.CmdCastSkillWithPoint (human.netId.Value, currentSkillIndex, point);
+					DestroyGameObject (castCollider, 0.0f);
+					castCollider = null;
+					skillCollider.onCollisionStay = null;
+				};
+			}
+		} else {
+			NetworkListener.Instance.CmdCastSkillWithPoint (human.netId.Value, currentSkillIndex, point);
 		}
 	}
 

@@ -48,6 +48,7 @@ public class BossShockwave : SkillBase
 			var pos = throwBall.transform.position;
 			human.transform.position = new Vector3(pos.x, 0, pos.z);
 			human.gameObject.SetActive (true);
+			human.Animator.HoldonSkill(false);
 		};
 
 		var messager = throwBall.AddComponent<SkillColliderMessager> ();

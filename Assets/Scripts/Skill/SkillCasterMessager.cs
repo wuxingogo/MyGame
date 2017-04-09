@@ -32,7 +32,13 @@ public class SkillCasterMessager : MonoBehaviour {
 			onCollisionStay ();
 		}
 	}
+	void OnDrawGizmos ()
+	{
+		var c = GetComponent<Collider> ();
+		GizmoUtlis.color = new Color (0, 0.5f, 0, 0.5f);
+		GizmoUtlis.DrawCollider (c);
 
+	}
 	void Update()
 	{
 		if (targetHuman != null) {

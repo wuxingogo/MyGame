@@ -57,7 +57,7 @@ public class AnimationCtr : XMonoBehaviour {
 
 	private Animator _animator = null;
 	public WeaponType weaponType = WeaponType.NONE;
-	public bool isIdle = false;
+
 	public Human human = null;
 	void Start()
 	{
@@ -79,6 +79,32 @@ public class AnimationCtr : XMonoBehaviour {
 	int idlePara = 0;
 	int lastBoolPara = 0;
 
+	AnimatorClipInfo? GetAnimaAction()
+	{
+		var clipInfo = _animator.GetCurrentAnimatorClipInfo (0);
+		if(clipInfo.Length > 0)
+			return clipInfo[0];
+		return null;
+	}
+	[X]
+	public AnimationClip CurrentAnimationClip
+	{
+		get{
+			var clipInfo = GetAnimaAction ();
+			if (clipInfo != null)
+				return clipInfo.Value.clip;
+			return null;
+		}
+	}
+	[X]
+	public bool isIdle{
+		get{
+			var clip = CurrentAnimationClip;
+			if (clip == null)
+				return false;
+			return clip.name.Contains ("Idle");
+		}
+	}
 	[X]
 	public void Idle()
 	{
@@ -112,7 +138,7 @@ public class AnimationCtr : XMonoBehaviour {
 		if (idlePara != 0) {
 			_animator.SetBool (idlePara, true);
 		}
-		isIdle = true;
+
 
 	}
 	public void CancelIdle()
@@ -182,7 +208,7 @@ public class AnimationCtr : XMonoBehaviour {
 			break;
 		}
 		EnableAnimationBool (animPara);
-		isIdle = false;
+
 	}
 	[X]
 	public void Run()

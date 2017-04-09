@@ -91,7 +91,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 		switch( message.eventCode )
 		{
 		case UnitNavigationEventMessage.Event.BeginPath:
-			_animationCtr.Walk ();
+			_animationCtr.Run ();
 			OnBeginMove (message);
 			break;
 		case UnitNavigationEventMessage.Event.DestinationReached:
@@ -202,7 +202,7 @@ public class Human : NetworkBehaviour, IHandleMessage<UnitNavigationEventMessage
 
 			for (int i = 0; i < totalSkill.Count; i++) {
 				if (Input.GetKeyUp (totalSkill [i].keyCode) && totalSkill [i].CanRelease() ) {
-
+					CleanSkill ();
 					currentSkill = totalSkill [i];
 					currentSkillIndex = i;
 					if (currentSkill.caseType == CastType.Immatie) {

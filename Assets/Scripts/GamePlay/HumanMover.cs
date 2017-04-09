@@ -40,8 +40,6 @@ public class HumanMover : XMonoBehaviour, IMoveUnits {
 		}
 
 		transform.position = position;
-
-
 	}
 
 	private static float TurnDir(Vector3 p1, Vector3 p2)
